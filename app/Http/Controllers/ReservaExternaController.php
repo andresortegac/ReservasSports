@@ -1,19 +1,31 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\ReservaExterna;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Throwable;
 
 class ReservaExternaController extends Controller
 {
     public function index()
     {
-        $reservas = ReservaExterna::where('cancha_id', 1)
-        ->orderBy('fecha', 'desc')
-        ->orderBy('hora', 'desc')
-        ->paginate(15);
+        try {
+            $reservas = ReservaExterna::where('cancha_id', 1)
+                ->orderBy('fecha', 'desc')
+                ->orderBy('hora', 'desc')
+                ->paginate(15);
 
-    return view('reservas_externas.index', compact('reservas'));
+            return view('reservas_externas.index', compact('reservas'));
+        } catch (Throwable $e) {
+            report($e);
+
+            return view('reservas_externas.index', [
+                'reservas' => $this->emptyReservasPaginator(),
+                'externalError' => $this->externalDbMessage(),
+            ]);
+        }
     }
 
     public function create()
@@ -29,25 +41,40 @@ class ReservaExternaController extends Controller
             'nombre_cliente' => 'required|string|max:150',
             'telefono_cliente' => 'required|string|max:30',
             'fecha' => 'required|date',
-            'hora' => 'required', // time
+            'hora' => 'required',
         ]);
 
-        ReservaExterna::create($data);
+        try {
+            ReservaExterna::create($data);
+        } catch (Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('reservas.externas.index')
+                ->with('error', $this->externalDbMessage());
+        }
 
         return redirect()
             ->route('reservas.externas.index')
             ->with('ok', 'Reserva externa creada correctamente');
     }
 
-    public function edit(ReservaExterna $reservas_externa)
+    public function edit(string $reservas_externa)
     {
-        // Laravel usa el nombre del parámetro según la ruta resource
-        return view('reservas_externas.edit', [
-            'reserva' => $reservas_externa
-        ]);
+        try {
+            return view('reservas_externas.edit', [
+                'reserva' => ReservaExterna::findOrFail($reservas_externa),
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('reservas.externas.index')
+                ->with('error', $this->externalDbMessage());
+        }
     }
 
-    public function update(Request $request, ReservaExterna $reservas_externa)
+    public function update(Request $request, string $reservas_externa)
     {
         $data = $request->validate([
             'cancha_id' => 'required|integer|min:1',
@@ -58,18 +85,47 @@ class ReservaExternaController extends Controller
             'hora' => 'required',
         ]);
 
-        $reservas_externa->update($data);
+        try {
+            ReservaExterna::findOrFail($reservas_externa)->update($data);
+        } catch (Throwable $e) {
+            report($e);
+
+            return redirect()
+                ->route('reservas.externas.index')
+                ->with('error', $this->externalDbMessage());
+        }
 
         return redirect()
             ->route('reservas.externas.index')
             ->with('ok', 'Reserva externa actualizada');
     }
 
-    public function destroy(ReservaExterna $reservas_externa)
+    public function destroy(string $reservas_externa)
     {
-        $reservas_externa->delete();
+        try {
+            ReservaExterna::findOrFail($reservas_externa)->delete();
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()->with('error', $this->externalDbMessage());
+        }
 
         return back()->with('ok', 'Reserva externa eliminada');
     }
-}
 
+    private function emptyReservasPaginator(): LengthAwarePaginator
+    {
+        return new LengthAwarePaginator(
+            [],
+            0,
+            15,
+            1,
+            ['path' => request()->url(), 'pageName' => 'page']
+        );
+    }
+
+    private function externalDbMessage(): string
+    {
+        return 'No se pudo conectar a la base de datos externa. Revisa las variables DB_EXTERNAL_* en el archivo .env.';
+    }
+}

@@ -13,6 +13,14 @@
     <div class="alert alert-success">{{ session('ok') }}</div>
 @endif
 
+@if(session('error'))
+    <div class="alert alert-warning">{{ session('error') }}</div>
+@endif
+
+@if(!empty($externalError))
+    <div class="alert alert-warning">{{ $externalError }}</div>
+@endif
+
 <div class="card shadow-sm">
     <div class="card-body table-responsive">
         <table class="table table-striped align-middle">
@@ -57,6 +65,13 @@
                     </td>
                 </tr>
             @endforeach
+            @if($reservas->isEmpty())
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">
+                        No hay datos para mostrar.
+                    </td>
+                </tr>
+            @endif
             </tbody>
         </table>
 
