@@ -108,13 +108,17 @@ a {
     color: rgba(255, 255, 255, 0.88);
     border-radius: 16px;
     margin-bottom: 0.45rem;
+    text-decoration: none;
     transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .nav-link-rs:hover,
+.nav-link-rs:focus,
+.nav-link-rs:active,
 .nav-link-rs.active {
     color: #fff;
     background: rgba(217, 249, 157, 0.14);
+    text-decoration: none;
     transform: translateX(2px);
 }
 
