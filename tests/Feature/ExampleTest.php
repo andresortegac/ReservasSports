@@ -15,7 +15,7 @@ class ExampleTest extends TestCase
         $response = $this->get('/');
 
         $response->assertOk();
-        $response->assertSee('Iniciar sesion');
+        $response->assertSee('Iniciar sesión');
     }
 
     public function test_guests_are_redirected_to_login_from_dashboard(): void

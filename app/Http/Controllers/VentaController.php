@@ -25,7 +25,7 @@ class VentaController extends Controller
             ->where('estado', 'pagada')
             ->sum('precio');
 
-        $detalleDia = Reserva::with('cliente')
+        $detalleDia = Reserva::with(['cliente', 'cancha.parent'])
             ->whereDate('fecha', $now->toDateString())
             ->where('estado', 'pagada')
             ->orderBy('hora')

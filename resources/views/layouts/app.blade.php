@@ -50,29 +50,33 @@
                     <span>Reservas externas</span>
                     <span>04</span>
                 </a>
+                <a href="{{ route('canchas.index') }}" class="nav-link-rs {{ request()->routeIs('canchas.*') ? 'active' : '' }}">
+                    <span>Canchas</span>
+                    <span>05</span>
+                </a>
 
-                <div class="section-title">Operacion</div>
+                <div class="section-title">Operación</div>
                 <a href="{{ route('clientes.index') }}" class="nav-link-rs {{ request()->routeIs('clientes.*') ? 'active' : '' }}">
                     <span>Clientes</span>
-                    <span>05</span>
+                    <span>06</span>
                 </a>
                 <a href="{{ route('ventas.index') }}" class="nav-link-rs {{ request()->routeIs('ventas.*') ? 'active' : '' }}">
                     <span>Ventas y caja</span>
-                    <span>06</span>
+                    <span>07</span>
                 </a>
 
                 <form action="{{ route('logout') }}" method="POST" class="mt-4">
                     @csrf
-                    <button type="submit" class="btn btn-rs btn-rs-danger w-100">Cerrar sesion</button>
+                    <button type="submit" class="btn btn-rs btn-rs-danger w-100">Cerrar sesión</button>
                 </form>
             </aside>
 
             <main class="content-wrap">
                 <div class="topbar">
-                    <button type="button" class="btn btn-rs btn-rs-light" id="sidebarToggle">Menu</button>
+                    <button type="button" class="btn btn-rs btn-rs-light" id="sidebarToggle">Menú</button>
                     <div>
                         <strong>Reservas Sports</strong>
-                        <div class="text-muted small">Sistema de reservas y operacion</div>
+                        <div class="text-muted small">Sistema de reservas y operación</div>
                     </div>
                 </div>
 

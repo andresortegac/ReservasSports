@@ -6,19 +6,19 @@
 <section class="login-shell">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+            <div class="col-12 col-sm-11 col-md-10 col-lg-8 col-xl-7">
                 <div class="card login-card border-0 shadow-lg rounded-5">
                     <div class="card-body">
                         <div class="login-header">
                             <div class="brand-badge mx-auto mb-3">RS</div>
                             <p class="login-kicker mb-2">Acceso administrativo</p>
-                            <h1 class="login-title">Iniciar sesion</h1>
+                            <h1 class="login-title">Iniciar sesión</h1>
                             <p class="login-sub mb-0">Ingresa con tu cuenta de administrador para gestionar reservas, clientes y ventas.</p>
                         </div>
 
                         @if ($errors->any())
                             <div class="alert-danger-custom mb-4">
-                                Verifica tu correo y contrasena antes de continuar.
+                                Verifica tu correo y contraseña antes de continuar.
                             </div>
                         @endif
 
@@ -42,7 +42,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="password" class="form-label">Contrasena</label>
+                                <label for="password" class="form-label">Contraseña</label>
                                 <div class="input-wrap">
                                     <span class="input-icon" aria-hidden="true">
                                         <svg viewBox="0 0 24 24">
@@ -51,7 +51,7 @@
                                             <path d="M12 13.25v3"></path>
                                         </svg>
                                     </span>
-                                    <input type="password" class="form-control form-control-lg @error('password') is-invalid @enderror" id="password" name="password" placeholder="Ingresa tu contrasena" required autocomplete="current-password">
+                                    <input type="password" class="form-control form-control-lg @error('password') is-invalid @enderror" id="password" name="password" placeholder="Ingresa tu contraseña" required autocomplete="current-password">
                                 </div>
                                 @error('password')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -60,7 +60,7 @@
 
                             <div class="form-check mb-4">
                                 <input class="form-check-input" type="checkbox" value="1" id="remember" name="remember">
-                                <label class="form-check-label" for="remember">Mantener sesion iniciada</label>
+                                <label class="form-check-label" for="remember">Mantener sesión iniciada</label>
                             </div>
 
                             <button type="submit" class="btn btn-rs login-submit w-100">Entrar al panel</button>
@@ -72,7 +72,7 @@
                             clave: <code>admin12345</code>
                         </div>
 
-                        <p class="small-note mb-0">Reservas Sports mantiene tu operacion lista para el siguiente turno.</p>
+                        <p class="small-note mb-0">Reservas Sports mantiene tu operación lista para el siguiente turno.</p>
                     </div>
                 </div>
             </div>

@@ -27,7 +27,7 @@ class DashboardController extends Controller
             'clientesTotales' => Cliente::count(),
         ];
 
-        $proximasReservas = Reserva::with('cliente')
+        $proximasReservas = Reserva::with(['cliente', 'cancha.parent'])
             ->where(function ($query) use ($today) {
                 $query->whereDate('fecha', '>', $today)
                     ->orWhere(function ($subQuery) use ($today) {

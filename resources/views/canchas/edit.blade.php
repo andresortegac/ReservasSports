@@ -1,7 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-<h3 class="mb-3">Editar reserva #{{ $reserva->id }}</h3>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Editar cancha</h3>
+    <a href="{{ route('canchas.index') }}" class="btn btn-secondary">Volver</a>
+</div>
 
 @if ($errors->any())
     <div class="alert alert-danger">
@@ -15,14 +18,14 @@
 
 <div class="card shadow-sm">
     <div class="card-body">
-        <form action="{{ route('reservas.update', $reserva) }}" method="POST">
+        <form action="{{ route('canchas.update', $cancha) }}" method="POST">
             @csrf
             @method('PUT')
-            @include('reservas.form')
+            @include('canchas.form')
 
             <div class="mt-4 d-flex gap-2">
-                <button class="btn btn-primary">Actualizar</button>
-                <a href="{{ route('reservas.index') }}" class="btn btn-secondary">Volver</a>
+                <button class="btn btn-primary">Actualizar cancha</button>
+                <a href="{{ route('canchas.index') }}" class="btn btn-outline-secondary">Cancelar</a>
             </div>
         </form>
     </div>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\CanchaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReservaController;
@@ -31,6 +32,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::resource('reservas', ReservaController::class);
+    Route::resource('canchas', CanchaController::class)->except('show');
 
     Route::prefix('reservas-externas')->name('reservas.externas.')->group(function () {
         Route::get('/', [ReservaExternaController::class, 'index'])->name('index');

@@ -48,7 +48,7 @@
                 @forelse($detalleDia as $r)
                     <tr>
                         <td>{{ $r->cliente->nombre ?? 'N/A' }}</td>
-                        <td>{{ $r->cancha_id }}</td>
+                        <td>{{ $r->cancha?->nombre_completo ?? "Cancha #{$r->cancha_id}" }}</td>
                         <td>{{ $r->hora_inicio }} - {{ $r->hora_fin }}</td>
                         <td>${{ number_format($r->precio,0,',','.') }}</td>
                     </tr>

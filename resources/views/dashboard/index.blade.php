@@ -6,12 +6,13 @@
 <div class="dashboard-hero d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
     <div>
         <span class="badge text-bg-success rounded-pill px-3 py-2 mb-2">Home administrativo</span>
-        <h1 class="h3 mb-2">Operacion central de la cancha</h1>
-        <p class="text-muted mb-0">Desde aqui puedes controlar reservas, clientes, cobros y seguimiento diario del negocio.</p>
+        <h1 class="h3 mb-2">Operación central de la cancha</h1>
+        <p class="text-muted mb-0">Desde aquí puedes controlar reservas, clientes, cobros y seguimiento diario del negocio.</p>
     </div>
     <div class="dashboard-actions d-flex flex-wrap">
         <a href="{{ route('reservas.create') }}" class="btn btn-rs btn-rs-primary">Crear reserva</a>
         <a href="{{ route('clientes.create') }}" class="btn btn-rs btn-rs-primary">Nuevo cliente</a>
+        <a href="{{ route('canchas.index') }}" class="btn btn-rs btn-rs-light">Gestionar canchas</a>
     </div>
 </div>
 
@@ -30,7 +31,7 @@
             <div class="card-body dashboard-summary-card">
                 <p class="text-muted mb-2">Cobros pendientes</p>
                 <h2 class="mb-1">{{ $metrics['pendientesCobro'] }}</h2>
-                <small class="text-muted">Reservas aun sin pago completo</small>
+                <small class="text-muted">Reservas aún sin pago completo</small>
             </div>
         </div>
     </div>
@@ -39,7 +40,7 @@
             <div class="card-body dashboard-summary-card">
                 <p class="text-muted mb-2">Ingresos hoy</p>
                 <h2 class="mb-1">${{ number_format($metrics['ingresosHoy'], 0, ',', '.') }}</h2>
-                <small class="text-muted">Pagos confirmados del dia</small>
+                <small class="text-muted">Pagos confirmados del día</small>
             </div>
         </div>
     </div>
@@ -60,14 +61,14 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
-                        <h3 class="h5 mb-1">Proximas reservas</h3>
-                        <p class="text-muted mb-0">Vista rapida para la operacion del dia y siguientes turnos.</p>
+                        <h3 class="h5 mb-1">Próximas reservas</h3>
+                        <p class="text-muted mb-0">Vista rápida para la operación del día y siguientes turnos.</p>
                     </div>
                     <a href="{{ route('reservas.index') }}" class="btn btn-sm btn-outline-dark rounded-pill">Ver todas</a>
                 </div>
 
                 @if ($proximasReservas->isEmpty())
-                    <div class="alert alert-light border mb-0">No hay reservas proximas registradas.</div>
+                    <div class="alert alert-light border mb-0">No hay reservas próximas registradas.</div>
                 @else
                     <div class="table-responsive">
                         <table class="table align-middle mb-0">
@@ -127,9 +128,9 @@
 
                 <hr class="my-4">
 
-                <h3 class="h5 mb-3">Horas mas reservadas del mes</h3>
+                <h3 class="h5 mb-3">Horas más reservadas del mes</h3>
                 @if ($horasMasReservadas->isEmpty())
-                    <div class="alert alert-light border mb-0">Aun no hay suficiente informacion para mostrar tendencias.</div>
+                    <div class="alert alert-light border mb-0">Aún no hay suficiente información para mostrar tendencias.</div>
                 @else
                     <div class="d-grid gap-2">
                         @foreach ($horasMasReservadas as $franja)
@@ -154,28 +155,28 @@
                     <div class="col-md-6">
                         <div class="border rounded-4 p-3 h-100">
                             <h4 class="h6">Reservas y calendario</h4>
-                            <p class="text-muted mb-3">Creacion, validacion de horarios ocupados, cambios y seguimiento de estados.</p>
-                            <a href="{{ route('reservas.index') }}" class="btn btn-sm btn-outline-success rounded-pill">Abrir modulo</a>
+                            <p class="text-muted mb-3">Creación, validación de horarios ocupados, cambios y seguimiento de estados.</p>
+                            <a href="{{ route('reservas.index') }}" class="btn btn-sm btn-outline-success rounded-pill">Abrir módulo</a>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="border rounded-4 p-3 h-100">
                             <h4 class="h6">Clientes</h4>
                             <p class="text-muted mb-3">Base de clientes y trazabilidad para promociones o historial de reservas.</p>
-                            <a href="{{ route('clientes.index') }}" class="btn btn-sm btn-outline-success rounded-pill">Abrir modulo</a>
+                            <a href="{{ route('clientes.index') }}" class="btn btn-sm btn-outline-success rounded-pill">Abrir módulo</a>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="border rounded-4 p-3 h-100">
                             <h4 class="h6">Caja y ventas</h4>
-                            <p class="text-muted mb-3">Ingreso diario, semanal y mensual de lo que ya esta registrado en reservas.</p>
-                            <a href="{{ route('ventas.index') }}" class="btn btn-sm btn-outline-success rounded-pill">Abrir modulo</a>
+                            <p class="text-muted mb-3">Ingreso diario, semanal y mensual de lo que ya está registrado en reservas.</p>
+                            <a href="{{ route('ventas.index') }}" class="btn btn-sm btn-outline-success rounded-pill">Abrir módulo</a>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="border rounded-4 p-3 h-100 bg-light">
                             <h4 class="h6">Siguiente fase</h4>
-                            <p class="text-muted mb-0">Inventario, POS detallado, pagos parciales, cierre de caja y reportes avanzados quedan listos para la siguiente iteracion.</p>
+                            <p class="text-muted mb-0">Inventario, POS detallado, pagos parciales, cierre de caja y reportes avanzados quedan listos para la siguiente iteración.</p>
                         </div>
                     </div>
                 </div>
@@ -186,7 +187,7 @@
     <div class="col-lg-4">
         <div class="card border-0 shadow-sm">
             <div class="card-body">
-                <h3 class="h5 mb-3">Accesos rapidos</h3>
+                <h3 class="h5 mb-3">Accesos rápidos</h3>
                 <div class="d-grid gap-2">
                     <a href="{{ route('reservas.create') }}" class="btn btn-success rounded-pill">Registrar nueva reserva</a>
                     <a href="{{ route('reservas.externas.index') }}" class="btn btn-outline-dark rounded-pill">Consultar reservas externas</a>

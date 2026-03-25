@@ -2,16 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Reserva;
+use App\Models\Cancha;
 use App\Models\Cliente;
+use App\Models\Reserva;
+use App\Services\CanchaAvailabilityService;
+use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Carbon\Carbon;   // 👈 IMPORTANTE
+use Illuminate\View\View;
 
 class ReservaController extends Controller
 {
-    public function index()
+    public function __construct(private readonly CanchaAvailabilityService $availability)
     {
-        $reservas = Reserva::with('cliente')
+    }
+
+    public function index(): View
+    {
+        $reservas = Reserva::with(['cliente', 'cancha.parent'])
             ->orderBy('fecha', 'desc')
             ->orderBy('hora', 'desc')
             ->paginate(15);
@@ -19,171 +27,168 @@ class ReservaController extends Controller
         return view('reservas.index', compact('reservas'));
     }
 
-    public function create()
+    public function create(): View
     {
-        $clientes = Cliente::orderBy('nombre')->get();
-        return view('reservas.create', compact('clientes'));
+        return view('reservas.create', $this->reservationFormContext(new Reserva()));
     }
 
-    // 👇👇 FALTABA ESTE MÉTODO
-    public function show(Reserva $reserva)
-{
-    return redirect()->route('reservas.index');
-}
-
-
-    public function store(Request $request)
+    public function show(Reserva $reserva): RedirectResponse
     {
-        $data = $request->validate([
-            'cliente_id'       => 'required|exists:clientes,id',
-            'cancha_id'        => 'required|integer|min:1',
-            'subcancha' => 'required|integer|in:1,2',
-            'fecha'            => 'required|date',
-            'hora'             => 'required|date_format:H:i',
-            'precio'           => 'required|numeric|min:0',
-            'estado'           => 'required|in:pendiente,pagada,cancelada',
-        ]);
+        return redirect()->route('reservas.index');
+    }
 
-        // Verificar si ya existe reserva en esa cancha+subcancha+fecha+hora
-        $yaExiste = Reserva::where('cancha_id', $data['cancha_id'])
-            ->where('subcancha', $data['subcancha'])
-            ->whereDate('fecha', $data['fecha'])
-            ->whereTime('hora', $data['hora'])
-            ->exists();
+    public function store(Request $request): RedirectResponse
+    {
+        [$data, $cancha] = $this->validatedReservationData($request);
 
-        if ($yaExiste) {
-            $reservadas = Reserva::where('cancha_id', $data['cancha_id'])
-                ->where('subcancha', $data['subcancha'])
-                ->whereDate('fecha', $data['fecha'])
-                ->orderBy('hora')
-                ->pluck('hora')
-                ->map(fn($h) => substr($h, 0, 5))
-                ->implode(', ');
-
-            return back()
-                ->withErrors([
-                    'hora' => 'Esa subcancha ya está reservada a esa hora. Horarios ocupados: ' .
-                              ($reservadas ?: 'ninguno') . '. Elige otra hora.',
-                ])
-                ->withInput();
-        }
-
-        // Promo reserva 11 gratis
         $reservasCliente = Reserva::where('cliente_id', $data['cliente_id'])
             ->where('estado', '!=', 'cancelada')
             ->count();
 
         $mensajePremio = null;
-        if ( ($reservasCliente + 1) % 11 == 0 ) {
+        if (($reservasCliente + 1) % 11 === 0) {
             $data['precio'] = 0;
-            $mensajePremio = '🎁 Esta reserva es GRATIS: el cliente llegó a 10 reservas y la 11 es de cortesía.';
+            $data['saldo_pendiente'] = 0;
+            $data['estado_pago'] = 'pagado';
+            $mensajePremio = 'Esta reserva es gratis: el cliente llegó a la reserva número 11.';
         }
 
         Reserva::create($data);
 
         return redirect()
             ->route('reservas.index')
-            ->with('ok', 'Reserva creada correctamente')
+            ->with('ok', "Reserva creada correctamente para {$cancha->nombre_completo}.")
             ->with('premio', $mensajePremio);
     }
 
-    public function edit(Reserva $reserva)
+    public function edit(Reserva $reserva): View
     {
-        $clientes = Cliente::orderBy('nombre')->get();
-        return view('reservas.edit', compact('reserva', 'clientes'));
+        return view('reservas.edit', $this->reservationFormContext($reserva));
     }
 
-    public function update(Request $request, Reserva $reserva)
+    public function update(Request $request, Reserva $reserva): RedirectResponse
     {
-        $data = $request->validate([
-            'cliente_id'       => 'required|exists:clientes,id',
-            'cancha_id'        => 'required|integer|min:1',
-            'subcancha' => 'required|integer|in:1,2',
-            'fecha'            => 'required|date',
-            'hora'             => 'required|date_format:H:i',
-            'precio'           => 'required|numeric|min:0',
-            'estado'           => 'required|in:pendiente,pagada,cancelada',
-        ]);
-
-        $yaExiste = Reserva::where('cancha_id', $data['cancha_id'])
-            ->where('subcancha', $data['subcancha'])
-            ->whereDate('fecha', $data['fecha'])
-            ->whereTime('hora', $data['hora'])
-            ->where('id', '!=', $reserva->id)
-            ->exists();
-
-        if ($yaExiste) {
-            $reservadas = Reserva::where('cancha_id', $data['cancha_id'])
-                ->where('subcancha', $data['subcancha'])
-                ->whereDate('fecha', $data['fecha'])
-                ->orderBy('hora')
-                ->pluck('hora')
-                ->map(fn($h) => substr($h, 0, 5))
-                ->implode(', ');
-
-            return back()
-                ->withErrors([
-                    'hora' => 'Esa subcancha ya está reservada a esa hora. Horarios ocupados: ' .
-                              ($reservadas ?: 'ninguno') . '. Elige otra hora.',
-                ])
-                ->withInput();
-        }
+        [$data, $cancha] = $this->validatedReservationData($request, $reserva);
 
         $reserva->update($data);
 
         return redirect()
             ->route('reservas.index')
-            ->with('ok', 'Reserva actualizada correctamente');
+            ->with('ok', "Reserva actualizada correctamente para {$cancha->nombre_completo}.");
     }
 
-    public function destroy(Reserva $reserva)
+    public function destroy(Reserva $reserva): RedirectResponse
     {
         $reserva->delete();
-        return back()->with('ok', 'Reserva eliminada correctamente');
+
+        return back()->with('ok', 'Reserva eliminada correctamente.');
     }
 
-    // 👉 MÉTODO PARA AJAX
-        public function horasDisponibles(Request $request)
+    public function horasDisponibles(Request $request)
     {
-        $fechaRaw  = $request->query('fecha');
-        $subcancha = $request->query('subcancha');
-        $canchaId  = $request->query('cancha_id', 1);
+        $request->validate([
+            'cancha_id' => ['required', 'integer', 'exists:canchas,id'],
+            'fecha' => ['required', 'date'],
+            'ignore_reserva_id' => ['nullable', 'integer'],
+        ]);
 
-        if (!$fechaRaw || !$subcancha) {
-            return response()->json([]);
-        }
+        $cancha = Cancha::findOrFail((int) $request->query('cancha_id'));
+        $fecha = Carbon::parse((string) $request->query('fecha'))->toDateString();
+        $ignoreReservationId = $request->integer('ignore_reserva_id') ?: null;
 
-        // 👇 ESTO ES LO QUE PREGUNTAS
-        try {
-            $fecha = str_contains($fechaRaw, '/')
-                ? Carbon::createFromFormat('d/m/Y', $fechaRaw)->format('Y-m-d')
-                : Carbon::parse($fechaRaw)->format('Y-m-d');
-        } catch (\Exception $e) {
-            return response()->json([]);
-        }
-
-        // Horario fijo
-        $horas = [];
-        $time = Carbon::createFromTime(6, 0);
-        $cierre = Carbon::createFromTime(23, 0);
-
-        while ($time < $cierre) {
-            $horas[] = $time->format('H:i');
-            $time->addHour();
-        }
-
-        $reservadas = Reserva::where('cancha_id', $canchaId)
-            ->where('subcancha', $subcancha)
-            ->whereDate('fecha', $fecha) // 👈 YA NORMALIZADA
-            ->pluck('hora')
-            ->map(fn($h) => substr($h, 0, 5))
-            ->toArray();
-
-        $disponibles = array_values(array_diff($horas, $reservadas));
-
-        return response()->json($disponibles);
+        return response()->json(
+            $this->availability->availableTimes($cancha, $fecha, $ignoreReservationId)
+        );
     }
 
+    /**
+     * @return array{0: array<string, mixed>, 1: Cancha}
+     */
+    private function validatedReservationData(Request $request, ?Reserva $reserva = null): array
+    {
+        $data = $request->validate([
+            'cliente_id' => ['required', 'exists:clientes,id'],
+            'cancha_id' => ['required', 'exists:canchas,id'],
+            'fecha' => ['required', 'date'],
+            'hora' => ['required', 'date_format:H:i'],
+            'precio' => ['nullable', 'numeric', 'min:0'],
+            'estado' => ['required', 'in:pendiente,confirmada,pagada,cancelada'],
+            'notas' => ['nullable', 'string', 'max:1000'],
+        ]);
 
+        $cancha = Cancha::with('parent')->findOrFail((int) $data['cancha_id']);
 
+        if ($issue = $this->availability->availabilityIssue($cancha)) {
+            return $this->throwReservationValidation('cancha_id', $issue);
+        }
+
+        $fecha = Carbon::parse((string) $data['fecha'])->toDateString();
+        $hora = Carbon::createFromFormat('H:i', (string) $data['hora'])->format('H:i:s');
+
+        if (!in_array(substr($hora, 0, 5), $this->availability->timeSlotsFor($cancha), true)) {
+            return $this->throwReservationValidation(
+                'hora',
+                'La hora elegida no está dentro del horario configurado para esta cancha.'
+            );
+        }
+
+        $conflict = $this->availability->conflictingReservation(
+            $cancha,
+            $fecha,
+            $hora,
+            $reserva?->id
+        );
+
+        if ($conflict) {
+            return $this->throwReservationValidation(
+                'hora',
+                $this->availability->conflictMessage($cancha, $conflict)
+            );
+        }
+
+        $precio = $data['precio'];
+        if ($precio === null || $precio === '') {
+            $precio = $cancha->precio_hora;
+        }
+
+        $estado = $data['estado'];
+        $precio = (float) $precio;
+
+        $data['fecha'] = $fecha;
+        $data['hora'] = $hora;
+        $data['precio'] = $precio;
+        $data['subcancha'] = 1;
+        $data['user_id'] = auth()->id();
+        $data['duracion_minutos'] = (int) $cancha->intervalo_minutos;
+        $data['anticipo'] = 0;
+        $data['saldo_pendiente'] = $estado === 'pagada' ? 0 : $precio;
+        $data['estado_pago'] = $estado === 'pagada' ? 'pagado' : 'pendiente';
+        $data['metodo_pago_principal'] = null;
+
+        return [$data, $cancha];
+    }
+
+    private function throwReservationValidation(string $field, string $message): never
+    {
+        throw \Illuminate\Validation\ValidationException::withMessages([
+            $field => $message,
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function reservationFormContext(Reserva $reserva): array
+    {
+        $clientes = Cliente::orderBy('nombre')->get();
+        $canchas = Cancha::with('parent')
+            ->withCount('children')
+            ->orderByRaw('CASE WHEN parent_id IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('parent_id')
+            ->orderBy('orden')
+            ->orderBy('nombre')
+            ->get();
+
+        return compact('clientes', 'canchas', 'reserva');
+    }
 }
