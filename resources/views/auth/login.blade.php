@@ -11,16 +11,31 @@
                     <div class="card-body">
                         <div class="login-header">
                             <div class="brand-badge mx-auto mb-3">RS</div>
-                            <h1 class="h3 mb-1">Iniciar sesion</h1>
-                            <p class="text-muted mb-0">Ingresa con tu cuenta de administrador.</p>
+                            <p class="login-kicker mb-2">Acceso administrativo</p>
+                            <h1 class="login-title">Iniciar sesion</h1>
+                            <p class="login-sub mb-0">Ingresa con tu cuenta de administrador para gestionar reservas, clientes y ventas.</p>
                         </div>
 
-                        <form method="POST" action="{{ route('login.store') }}">
+                        @if ($errors->any())
+                            <div class="alert-danger-custom mb-4">
+                                Verifica tu correo y contrasena antes de continuar.
+                            </div>
+                        @endif
+
+                        <form method="POST" action="{{ route('login.store') }}" class="login-form">
                             @csrf
 
                             <div class="mb-3">
                                 <label for="email" class="form-label">Correo</label>
-                                <input type="email" class="form-control form-control-lg @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="email">
+                                <div class="input-wrap">
+                                    <span class="input-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24">
+                                            <rect x="3.5" y="6.5" width="17" height="11" rx="2"></rect>
+                                            <path d="M4 8l8 5.5L20 8"></path>
+                                        </svg>
+                                    </span>
+                                    <input type="email" class="form-control form-control-lg @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" placeholder="admin@reservassports.com" required autofocus autocomplete="email">
+                                </div>
                                 @error('email')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -28,7 +43,16 @@
 
                             <div class="mb-3">
                                 <label for="password" class="form-label">Contrasena</label>
-                                <input type="password" class="form-control form-control-lg @error('password') is-invalid @enderror" id="password" name="password" required autocomplete="current-password">
+                                <div class="input-wrap">
+                                    <span class="input-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24">
+                                            <path d="M8 10V8.75a4 4 0 1 1 8 0V10"></path>
+                                            <rect x="5.5" y="10" width="13" height="9.5" rx="2"></rect>
+                                            <path d="M12 13.25v3"></path>
+                                        </svg>
+                                    </span>
+                                    <input type="password" class="form-control form-control-lg @error('password') is-invalid @enderror" id="password" name="password" placeholder="Ingresa tu contrasena" required autocomplete="current-password">
+                                </div>
                                 @error('password')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -39,14 +63,16 @@
                                 <label class="form-check-label" for="remember">Mantener sesion iniciada</label>
                             </div>
 
-                            <button type="submit" class="btn btn-rs btn-rs-primary w-100">Entrar</button>
+                            <button type="submit" class="btn btn-rs login-submit w-100">Entrar al panel</button>
                         </form>
 
-                        <div class="alert alert-light border mt-4 mb-0 login-help">
-                            <strong>Acceso inicial:</strong><br>
+                        <div class="login-help">
+                            <strong>Acceso inicial</strong>
                             correo: <code>admin@reservassports.com</code><br>
                             clave: <code>admin12345</code>
                         </div>
+
+                        <p class="small-note mb-0">Reservas Sports mantiene tu operacion lista para el siguiente turno.</p>
                     </div>
                 </div>
             </div>
