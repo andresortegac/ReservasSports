@@ -25,7 +25,7 @@ class ReservaCanchaHierarchyTest extends TestCase
                 'fecha' => '2030-01-15',
                 'hora' => '10:00',
                 'precio' => 210000,
-                'estado' => 'pendiente',
+                'estado' => 'confirmada',
             ])
             ->assertRedirect(route('reservas.index'));
 
@@ -46,7 +46,7 @@ class ReservaCanchaHierarchyTest extends TestCase
                 'fecha' => '2030-01-15',
                 'hora' => '10:00',
                 'precio' => 80000,
-                'estado' => 'pendiente',
+                'estado' => 'confirmada',
             ])
             ->assertRedirect(route('reservas.create'))
             ->assertSessionHasErrors('hora');
@@ -63,7 +63,7 @@ class ReservaCanchaHierarchyTest extends TestCase
                 'fecha' => '2030-01-16',
                 'hora' => '18:00',
                 'precio' => 80000,
-                'estado' => 'pendiente',
+                'estado' => 'confirmada',
             ])
             ->assertRedirect(route('reservas.index'));
 
@@ -84,7 +84,7 @@ class ReservaCanchaHierarchyTest extends TestCase
                 'fecha' => '2030-01-16',
                 'hora' => '18:00',
                 'precio' => 210000,
-                'estado' => 'pendiente',
+                'estado' => 'confirmada',
             ])
             ->assertRedirect(route('reservas.create'))
             ->assertSessionHasErrors('hora');
@@ -118,7 +118,7 @@ class ReservaCanchaHierarchyTest extends TestCase
                 'fecha' => '2030-01-17',
                 'hora' => '11:00',
                 'precio' => 210000,
-                'estado' => 'pendiente',
+                'estado' => 'confirmada',
             ])
             ->assertRedirect(route('reservas.create'))
             ->assertSessionHasErrors('hora');
@@ -149,10 +149,35 @@ class ReservaCanchaHierarchyTest extends TestCase
                 'fecha' => '2030-01-15',
                 'hora' => '10:00',
                 'precio' => 210000,
-                'estado' => 'pendiente',
+                'estado' => 'confirmada',
             ])
             ->assertRedirect(route('reservas.create'))
             ->assertSessionHasErrors('cancha_id');
+    }
+
+    public function test_base_price_is_taken_from_cancha_and_discount_is_applied(): void
+    {
+        [$user, $cliente, $principal] = $this->baseReservationSetup();
+
+        $this->actingAs($user)
+            ->post(route('reservas.store'), [
+                'cliente_id' => $cliente->id,
+                'cancha_id' => $principal->id,
+                'fecha' => '2030-01-18',
+                'hora' => '10:00',
+                'precio' => 5000,
+                'descuento' => 20000,
+                'estado' => 'confirmada',
+            ])
+            ->assertRedirect(route('reservas.index'));
+
+        $this->assertDatabaseHas('reservas', [
+            'cliente_id' => $cliente->id,
+            'cancha_id' => $principal->id,
+            'precio_base' => 210000,
+            'descuento' => 20000,
+            'precio' => 190000,
+        ]);
     }
 
     /**

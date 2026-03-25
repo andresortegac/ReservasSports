@@ -1,8 +1,30 @@
 @php
     $selectedCanchaId = old('cancha_id', $reserva->cancha_id ?? null);
     $selectedCancha = $canchas->firstWhere('id', $selectedCanchaId);
-    $precioBase = old('precio', $reserva->precio ?? $selectedCancha?->precio_hora ?? 0);
-    $estado = old('estado', $reserva->estado ?? 'pendiente');
+    $descuento = old('descuento', $reserva->descuento ?? 0);
+    $precioBaseVisual = old('precio_base_visual');
+
+    if ($precioBaseVisual === null) {
+        if ($reserva->exists && (string) $selectedCanchaId === (string) $reserva->cancha_id && (float) ($reserva->precio_base ?? 0) > 0) {
+            $precioBaseVisual = $reserva->precio_base;
+        } else {
+            $precioBaseVisual = $selectedCancha?->precio_hora ?? 0;
+        }
+    }
+
+    $precioTotalVisual = max(0, (float) $precioBaseVisual - (float) $descuento);
+
+    if (
+        $reserva->exists
+        && (float) ($reserva->precio_base ?? 0) > 0
+        && (float) ($reserva->precio ?? 0) === 0.0
+        && (float) ($reserva->descuento ?? 0) === 0.0
+        && (string) $selectedCanchaId === (string) $reserva->cancha_id
+    ) {
+        $precioTotalVisual = 0;
+    }
+
+    $estado = old('estado', $reserva->estado ?? 'confirmada');
     $oldHora = old('hora', $reserva->hora_inicio ?? '');
 @endphp
 
@@ -69,26 +91,60 @@
     </div>
 
     <div class="col-md-3">
-        <label class="form-label" for="precio">Precio</label>
+        <label class="form-label" for="precio-base">Precio base</label>
         <input
             type="number"
-            name="precio"
-            id="precio"
+            id="precio-base"
+            class="form-control"
+            value="{{ number_format((float) $precioBaseVisual, 2, '.', '') }}"
+            min="0"
+            step="0.01"
+            readonly
+        >
+        <div class="form-text">Este valor se toma automáticamente desde la cancha.</div>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label" for="descuento">Descuento</label>
+        <input
+            type="number"
+            name="descuento"
+            id="descuento"
             step="0.01"
             class="form-control"
-            value="{{ $precioBase }}"
+            value="{{ number_format((float) $descuento, 2, '.', '') }}"
             min="0"
-            required
+        >
+        <div class="form-text">Úsalo, por ejemplo, para eventos o tarifas especiales.</div>
+        @error('descuento')
+            <div class="text-danger small">{{ $message }}</div>
+        @enderror
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label" for="precio-total">Total final</label>
+        <input
+            type="number"
+            id="precio-total"
+            class="form-control"
+            value="{{ number_format((float) $precioTotalVisual, 2, '.', '') }}"
+            min="0"
+            step="0.01"
+            readonly
         >
     </div>
 
     <div class="col-md-3">
         <label class="form-label" for="estado">Estado</label>
         <select name="estado" id="estado" class="form-select" required>
-            <option value="pendiente" {{ $estado === 'pendiente' ? 'selected' : '' }}>Pendiente</option>
+            @if ($reserva->exists)
+                <option value="pendiente" {{ $estado === 'pendiente' ? 'selected' : '' }}>Pendiente</option>
+            @endif
             <option value="confirmada" {{ $estado === 'confirmada' ? 'selected' : '' }}>Confirmada</option>
             <option value="pagada" {{ $estado === 'pagada' ? 'selected' : '' }}>Pagada</option>
-            <option value="cancelada" {{ $estado === 'cancelada' ? 'selected' : '' }}>Cancelada</option>
+            @if ($reserva->exists)
+                <option value="cancelada" {{ $estado === 'cancelada' ? 'selected' : '' }}>Cancelada</option>
+            @endif
         </select>
     </div>
 
@@ -104,13 +160,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const canchaSelect = document.getElementById('cancha-select');
     const fechaInput = document.getElementById('fecha');
     const horaSelect = document.getElementById('hora-select');
-    const precioInput = document.getElementById('precio');
+    const precioBaseInput = document.getElementById('precio-base');
+    const descuentoInput = document.getElementById('descuento');
+    const precioTotalInput = document.getElementById('precio-total');
     const canchaMeta = document.getElementById('cancha-meta');
     const oldHora = @json($oldHora);
-    const isEditMode = @json((bool) $reserva->exists);
     const ignoreReservationId = @json($reserva->id ?? null);
 
-    if (!canchaSelect || !fechaInput || !horaSelect || !precioInput || !canchaMeta) {
+    if (!canchaSelect || !fechaInput || !horaSelect || !precioBaseInput || !descuentoInput || !precioTotalInput || !canchaMeta) {
         return;
     }
 
@@ -118,23 +175,39 @@ document.addEventListener('DOMContentLoaded', function () {
         return canchaSelect.options[canchaSelect.selectedIndex] || null;
     }
 
-    function updateCanchaMeta(forcePriceUpdate) {
+    function formatAmount(value) {
+        return Number(value || 0).toFixed(2);
+    }
+
+    function updateTotal() {
+        const precioBase = Number(precioBaseInput.value || 0);
+        const descuento = Number(descuentoInput.value || 0);
+        const total = Math.max(0, precioBase - descuento);
+
+        precioTotalInput.value = formatAmount(total);
+    }
+
+    function updateCanchaMeta(forceBaseUpdate) {
         const option = selectedOption();
 
         if (!option || !option.value) {
             canchaMeta.textContent = 'Selecciona una cancha para cargar horarios y precio base.';
+            precioBaseInput.value = formatAmount(0);
+            updateTotal();
             return;
         }
 
         canchaMeta.textContent =
             option.dataset.tipo +
-            ' · Dias ' + option.dataset.dias +
+            ' · Días ' + option.dataset.dias +
             ' · Horarios ' + option.dataset.bloques +
             ' · Estado ' + option.dataset.estado;
 
-        if (forcePriceUpdate || (!isEditMode && (!precioInput.value || Number(precioInput.value) === 0))) {
-            precioInput.value = option.dataset.precio || 0;
+        if (forceBaseUpdate) {
+            precioBaseInput.value = formatAmount(option.dataset.precio || 0);
         }
+
+        updateTotal();
     }
 
     async function loadHours() {
@@ -194,6 +267,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     fechaInput.addEventListener('change', loadHours);
+    descuentoInput.addEventListener('input', updateTotal);
 
     updateCanchaMeta(false);
     if (canchaSelect.value && fechaInput.value) {

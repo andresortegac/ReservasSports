@@ -17,6 +17,8 @@ return new class extends Migration
             $table->date('fecha');
             $table->time('hora');
             $table->unsignedSmallInteger('duracion_minutos')->default(60);
+            $table->decimal('precio_base', 10, 2)->default(0);
+            $table->decimal('descuento', 10, 2)->default(0);
             $table->decimal('precio', 10, 2)->default(0);
             $table->decimal('anticipo', 10, 2)->default(0);
             $table->decimal('saldo_pendiente', 10, 2)->default(0);

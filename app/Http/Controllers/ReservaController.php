@@ -106,13 +106,17 @@ class ReservaController extends Controller
      */
     private function validatedReservationData(Request $request, ?Reserva $reserva = null): array
     {
+        $allowedStates = $reserva?->exists
+            ? ['pendiente', 'confirmada', 'pagada', 'cancelada']
+            : ['confirmada', 'pagada'];
+
         $data = $request->validate([
             'cliente_id' => ['required', 'exists:clientes,id'],
             'cancha_id' => ['required', 'exists:canchas,id'],
             'fecha' => ['required', 'date'],
             'hora' => ['required', 'date_format:H:i'],
-            'precio' => ['nullable', 'numeric', 'min:0'],
-            'estado' => ['required', 'in:pendiente,confirmada,pagada,cancelada'],
+            'descuento' => ['nullable', 'numeric', 'min:0'],
+            'estado' => ['required', 'in:' . implode(',', $allowedStates)],
             'notas' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -153,23 +157,42 @@ class ReservaController extends Controller
             );
         }
 
-        $precio = $data['precio'];
-        if ($precio === null || $precio === '') {
-            $precio = $cancha->precio_hora;
+        $precioBase = $this->resolveBasePrice($cancha, $reserva, (int) $data['cancha_id']);
+        $descuento = (float) ($data['descuento'] ?? 0);
+
+        if ($descuento > $precioBase) {
+            return $this->throwReservationValidation(
+                'descuento',
+                'El descuento no puede ser mayor que el precio base de la cancha.'
+            );
+        }
+
+        $precioFinal = max(0, $precioBase - $descuento);
+
+        if (
+            $reserva
+            && $reserva->exists
+            && (int) $data['cancha_id'] === $reserva->cancha_id
+            && (float) $reserva->precio_base > 0
+            && (float) $reserva->precio === 0.0
+            && (float) $reserva->descuento === 0.0
+        ) {
+            $precioFinal = 0;
         }
 
         $estado = $data['estado'];
-        $precio = (float) $precio;
 
         $data['fecha'] = $fecha;
         $data['hora'] = $hora;
-        $data['precio'] = $precio;
+        $data['precio_base'] = $precioBase;
+        $data['descuento'] = $descuento;
+        $data['precio'] = $precioFinal;
         $data['subcancha'] = 1;
         $data['user_id'] = auth()->id();
         $data['duracion_minutos'] = 60;
         $data['anticipo'] = 0;
-        $data['saldo_pendiente'] = $estado === 'pagada' ? 0 : $precio;
-        $data['estado_pago'] = $estado === 'pagada' ? 'pagado' : 'pendiente';
+        $data['saldo_pendiente'] = $estado === 'pagada' || $precioFinal === 0 ? 0 : $precioFinal;
+        $data['estado_pago'] = $estado === 'pagada' || $precioFinal === 0 ? 'pagado' : 'pendiente';
         $data['metodo_pago_principal'] = null;
 
         return [$data, $cancha];
@@ -197,5 +220,19 @@ class ReservaController extends Controller
             ->get();
 
         return compact('clientes', 'canchas', 'reserva');
+    }
+
+    private function resolveBasePrice(Cancha $cancha, ?Reserva $reserva, int $selectedCanchaId): float
+    {
+        if (
+            $reserva
+            && $reserva->exists
+            && $selectedCanchaId === $reserva->cancha_id
+            && (float) $reserva->precio_base > 0
+        ) {
+            return (float) $reserva->precio_base;
+        }
+
+        return (float) $cancha->precio_hora;
     }
 }

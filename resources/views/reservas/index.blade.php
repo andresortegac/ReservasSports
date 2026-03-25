@@ -41,7 +41,12 @@
                         <td>{{ $reserva->cancha?->nombre_completo ?? "Cancha #{$reserva->cancha_id}" }}</td>
                         <td>{{ optional($reserva->fecha)->format('Y-m-d') }}</td>
                         <td>{{ $reserva->hora_inicio }} - {{ $reserva->hora_fin }}</td>
-                        <td>${{ number_format((float) $reserva->precio, 0, ',', '.') }}</td>
+                        <td>
+                            <div>${{ number_format((float) $reserva->precio, 0, ',', '.') }}</div>
+                            @if ((float) ($reserva->descuento ?? 0) > 0)
+                                <div class="text-muted small">Desc. ${{ number_format((float) $reserva->descuento, 0, ',', '.') }}</div>
+                            @endif
+                        </td>
                         <td>
                             <span class="badge text-bg-{{ $reserva->estado === 'pagada' ? 'success' : ($reserva->estado === 'cancelada' ? 'secondary' : 'warning') }}">
                                 {{ ucfirst($reserva->estado) }}

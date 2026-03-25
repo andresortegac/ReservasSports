@@ -16,6 +16,8 @@ class Reserva extends Model
         'fecha',
         'hora',
         'duracion_minutos',
+        'precio_base',
+        'descuento',
         'precio',
         'anticipo',
         'saldo_pendiente',
@@ -27,6 +29,8 @@ class Reserva extends Model
 
     protected $casts = [
         'fecha' => 'date:Y-m-d',
+        'precio_base' => 'decimal:2',
+        'descuento' => 'decimal:2',
         'precio' => 'decimal:2',
         'anticipo' => 'decimal:2',
         'saldo_pendiente' => 'decimal:2',
