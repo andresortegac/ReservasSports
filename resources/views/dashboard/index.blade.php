@@ -11,7 +11,7 @@
     </div>
     <div class="dashboard-actions d-flex flex-wrap">
         <a href="{{ route('reservas.create') }}" class="btn btn-rs btn-rs-primary">Crear reserva</a>
-        <a href="{{ route('clientes.create') }}" class="btn btn-rs btn-rs-light">Nuevo cliente</a>
+        <a href="{{ route('clientes.create') }}" class="btn btn-rs btn-rs-primary">Nuevo cliente</a>
     </div>
 </div>
 
