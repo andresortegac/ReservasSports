@@ -4,7 +4,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Reservas de usuarios externas EdwinSport</h3>
 
-    <a href="{{ route('reservas.externas.create') }}" class="btn btn-primary btn-sm">
+    <a href="{{ route('reservas.externas.create') }}" class="btn btn-rs-action btn-rs-action-primary">
         + Nueva reserva externa
     </a>
 </div>

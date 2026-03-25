@@ -20,9 +20,9 @@
             @method('PUT')
             @include('reservas.form')
 
-            <div class="mt-4 d-flex gap-2">
-                <button class="btn btn-primary">Actualizar</button>
-                <a href="{{ route('reservas.index') }}" class="btn btn-secondary">Volver</a>
+            <div class="form-actions mt-4">
+                <button class="btn btn-rs-action btn-rs-action-primary">Actualizar</button>
+                <a href="{{ route('reservas.index') }}" class="btn btn-rs-action btn-rs-action-secondary">Volver</a>
             </div>
         </form>
     </div>

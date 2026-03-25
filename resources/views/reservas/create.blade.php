@@ -19,9 +19,9 @@
             @csrf
             @include('reservas.form')
 
-            <div class="mt-4 d-flex gap-2">
-                <button class="btn btn-primary">Guardar</button>
-                <a href="{{ route('reservas.index') }}" class="btn btn-secondary">Cancelar</a>
+            <div class="form-actions mt-4">
+                <button class="btn btn-rs-action btn-rs-action-primary">Guardar</button>
+                <a href="{{ route('reservas.index') }}" class="btn btn-rs-action btn-rs-action-secondary">Cancelar</a>
             </div>
         </form>
     </div>

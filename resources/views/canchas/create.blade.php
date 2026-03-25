@@ -3,7 +3,7 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3>Nueva cancha</h3>
-    <a href="{{ route('canchas.index') }}" class="btn btn-secondary">Volver</a>
+    <a href="{{ route('canchas.index') }}" class="btn btn-rs-action btn-rs-action-secondary">Volver</a>
 </div>
 
 @if ($errors->any())
@@ -22,9 +22,9 @@
             @csrf
             @include('canchas.form')
 
-            <div class="mt-4 d-flex gap-2">
-                <button class="btn btn-primary">Guardar cancha</button>
-                <a href="{{ route('canchas.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+            <div class="form-actions mt-4">
+                <button class="btn btn-rs-action btn-rs-action-primary">Guardar cancha</button>
+                <a href="{{ route('canchas.index') }}" class="btn btn-rs-action btn-rs-action-secondary">Cancelar</a>
             </div>
         </form>
     </div>

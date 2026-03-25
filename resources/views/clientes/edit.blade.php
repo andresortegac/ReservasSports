@@ -16,7 +16,7 @@
                 </div>
 
                 <div class="col-md-3">
-                    <label class="form-label">Telefono</label>
+                    <label class="form-label">Teléfono</label>
                     <input type="text" name="telefono" class="form-control" value="{{ old('telefono', $cliente->telefono) }}">
                 </div>
 
@@ -26,9 +26,9 @@
                 </div>
             </div>
 
-            <div class="mt-4 d-flex gap-2">
-                <button class="btn btn-primary">Actualizar</button>
-                <a href="{{ route('clientes.index') }}" class="btn btn-secondary">Cancelar</a>
+            <div class="form-actions mt-4">
+                <button class="btn btn-rs-action btn-rs-action-primary">Actualizar</button>
+                <a href="{{ route('clientes.index') }}" class="btn btn-rs-action btn-rs-action-secondary">Cancelar</a>
             </div>
         </form>
     </div>
