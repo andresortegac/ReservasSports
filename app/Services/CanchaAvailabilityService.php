@@ -25,15 +25,15 @@ class CanchaAvailabilityService
 
     public function availabilityIssue(Cancha $cancha): ?string
     {
-        if (!$cancha->activa) {
-            return "La cancha {$cancha->nombre} está inactiva.";
+        if (empty($cancha->bloques_horarios)) {
+            return "La cancha {$cancha->nombre} no tiene bloques horarios configurados.";
         }
 
-        if ($cancha->estado_operativo === 'mantenimiento') {
-            return "La cancha {$cancha->nombre} está en mantenimiento.";
+        if ($cancha->estado_operativo !== 'disponible') {
+            return "La cancha {$cancha->nombre} está {$this->estadoDescripcion($cancha)}.";
         }
 
-        if ($cancha->hora_apertura >= $cancha->hora_cierre) {
+        if (empty($this->timeSlotsFor($cancha))) {
             return "La cancha {$cancha->nombre} no tiene un horario válido configurado.";
         }
 
@@ -44,24 +44,16 @@ class CanchaAvailabilityService
                 break;
             }
 
-            if (!$ancestor->activa) {
-                return "La cancha principal {$ancestor->nombre} está inactiva.";
-            }
-
-            if ($ancestor->estado_operativo === 'mantenimiento') {
-                return "La cancha principal {$ancestor->nombre} está en mantenimiento.";
+            if ($ancestor->estado_operativo !== 'disponible') {
+                return "La cancha principal {$ancestor->nombre} está {$this->estadoDescripcion($ancestor)}.";
             }
 
             $ancestorId = $ancestor->parent_id;
         }
 
         foreach ($this->descendants($cancha->id) as $descendant) {
-            if (!$descendant->activa) {
-                return "No puedes reservar {$cancha->nombre} mientras {$descendant->nombre} esté inactiva.";
-            }
-
-            if ($descendant->estado_operativo === 'mantenimiento') {
-                return "No puedes reservar {$cancha->nombre} mientras {$descendant->nombre} esté en mantenimiento.";
+            if ($descendant->estado_operativo !== 'disponible') {
+                return "No puedes reservar {$cancha->nombre} mientras {$descendant->nombre} esté {$this->estadoDescripcion($descendant)}.";
             }
         }
 
@@ -70,7 +62,7 @@ class CanchaAvailabilityService
 
     public function availableTimes(Cancha $cancha, string $fecha, ?int $ignoreReservationId = null): array
     {
-        if ($this->availabilityIssue($cancha)) {
+        if ($this->dateAvailabilityIssue($cancha, $fecha)) {
             return [];
         }
 
@@ -97,15 +89,31 @@ class CanchaAvailabilityService
 
     public function timeSlotsFor(Cancha $cancha): array
     {
-        $start = Carbon::createFromFormat('H:i:s', $cancha->hora_apertura);
-        $end = Carbon::createFromFormat('H:i:s', $cancha->hora_cierre);
-        $step = max(15, (int) $cancha->intervalo_minutos);
-
         $slots = [];
-        while ($start < $end) {
-            $slots[] = $start->format('H:i');
-            $start->addMinutes($step);
+
+        foreach ($cancha->bloques_horarios ?? [] as $block) {
+            $inicio = (string) ($block['inicio'] ?? '');
+            $fin = (string) ($block['fin'] ?? '');
+
+            if ($inicio === '' || $fin === '') {
+                continue;
+            }
+
+            $start = Carbon::createFromFormat('H:i', $inicio);
+            $end = Carbon::createFromFormat('H:i', $fin);
+
+            if ($start->gte($end)) {
+                continue;
+            }
+
+            while ($start < $end) {
+                $slots[] = $start->format('H:i');
+                $start->addHour();
+            }
         }
+
+        $slots = array_values(array_unique($slots));
+        sort($slots);
 
         return $slots;
     }
@@ -120,6 +128,33 @@ class CanchaAvailabilityService
         }
 
         return "Ese horario no está disponible para {$selectedName} porque se cruza con {$conflictCanchaName}.";
+    }
+
+    public function dateAvailabilityIssue(Cancha $cancha, string $fecha): ?string
+    {
+        if ($issue = $this->availabilityIssue($cancha)) {
+            return $issue;
+        }
+
+        if (!$this->operatesOnDate($cancha, $fecha)) {
+            return "La cancha {$cancha->nombre} no funciona el {$this->dayNameFromDate($fecha)}.";
+        }
+
+        $ancestorId = $cancha->parent_id;
+        while ($ancestorId) {
+            $ancestor = Cancha::find($ancestorId);
+            if (!$ancestor) {
+                break;
+            }
+
+            if (!$this->operatesOnDate($ancestor, $fecha)) {
+                return "La cancha principal {$ancestor->nombre} no funciona el {$this->dayNameFromDate($fecha)}.";
+            }
+
+            $ancestorId = $ancestor->parent_id;
+        }
+
+        return null;
     }
 
     /**
@@ -166,5 +201,39 @@ class CanchaAvailabilityService
         }
 
         return $descendants;
+    }
+
+    private function estadoDescripcion(Cancha $cancha): string
+    {
+        return match ($cancha->estado_operativo) {
+            'mantenimiento' => 'en mantenimiento',
+            'fuera_de_servicio' => 'fuera de servicio',
+            default => 'disponible',
+        };
+    }
+
+    public function operatesOnDate(Cancha $cancha, string $fecha): bool
+    {
+        $day = $this->dayKeyFromDate($fecha);
+
+        return in_array($day, $cancha->dias_operacion ?? [], true);
+    }
+
+    private function dayKeyFromDate(string $fecha): string
+    {
+        return match (Carbon::parse($fecha)->dayOfWeekIso) {
+            1 => 'lunes',
+            2 => 'martes',
+            3 => 'miercoles',
+            4 => 'jueves',
+            5 => 'viernes',
+            6 => 'sabado',
+            default => 'domingo',
+        };
+    }
+
+    private function dayNameFromDate(string $fecha): string
+    {
+        return Cancha::diasSemana()[$this->dayKeyFromDate($fecha)] ?? 'día seleccionado';
     }
 }

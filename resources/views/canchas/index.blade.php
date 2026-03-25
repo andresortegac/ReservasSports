@@ -4,7 +4,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h3 class="mb-1">Canchas</h3>
-        <p class="text-muted mb-0">Administra canchas principales, divisiones, horarios, precios y estados operativos.</p>
+        <p class="text-muted mb-0">Administra tipos de cancha, bloques horarios, precios y estados operativos.</p>
     </div>
     <a href="{{ route('canchas.create') }}" class="btn btn-primary btn-sm">+ Nueva cancha</a>
 </div>
@@ -23,8 +23,8 @@
             <thead>
                 <tr>
                     <th>Nombre</th>
-                    <th>Jerarquía</th>
-                    <th>Horario</th>
+                    <th>Tipo</th>
+                    <th>Horarios</th>
                     <th>Precio/hora</th>
                     <th>Estado</th>
                     <th>Reservas</th>
@@ -33,34 +33,45 @@
             </thead>
             <tbody>
                 @forelse ($canchas as $cancha)
+                    @php
+                        $badgeClass = match ($cancha->estado_operativo) {
+                            'mantenimiento' => 'warning',
+                            'fuera_de_servicio' => 'secondary',
+                            default => 'success',
+                        };
+                    @endphp
                     <tr>
                         <td>
                             <strong>{{ $cancha->nombre }}</strong>
-                            <div class="text-muted small">{{ ucfirst($cancha->tipo) }}</div>
                             @if ($cancha->parent)
                                 <div class="text-muted small">Pertenece a {{ $cancha->parent->nombre }}</div>
-                            @elseif ($cancha->children_count > 0)
-                                <div class="text-muted small">{{ $cancha->children_count }} divisiones configuradas</div>
+                            @elseif ($cancha->tipo === 'con_divisiones')
+                                <div class="text-muted small">{{ $cancha->children_count }} subcanchas configuradas</div>
                             @endif
                         </td>
                         <td>{{ $cancha->tipo_jerarquia }}</td>
-                        <td>{{ substr((string) $cancha->hora_apertura, 0, 5) }} - {{ substr((string) $cancha->hora_cierre, 0, 5) }}</td>
+                        <td>
+                            <div>{{ $cancha->bloques_horarios_legibles }}</div>
+                            <div class="text-muted small">{{ $cancha->dias_operacion_legibles }}</div>
+                        </td>
                         <td>${{ number_format((float) $cancha->precio_hora, 0, ',', '.') }}</td>
                         <td>
-                            <span class="badge text-bg-{{ $cancha->estado_legible === 'Disponible' ? 'success' : ($cancha->estado_legible === 'Mantenimiento' ? 'warning' : 'secondary') }}">
+                            <span class="badge text-bg-{{ $badgeClass }}">
                                 {{ $cancha->estado_legible }}
                             </span>
                         </td>
                         <td>{{ $cancha->reservas_count }}</td>
                         <td class="text-end">
-                            <a href="{{ route('canchas.edit', $cancha) }}" class="btn btn-outline-primary btn-sm">Editar</a>
-                            <form action="{{ route('canchas.destroy', $cancha) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button class="btn btn-outline-danger btn-sm" onclick="return confirm('¿Eliminar cancha?')">
-                                    Eliminar
-                                </button>
-                            </form>
+                            <div class="table-actions">
+                                <a href="{{ route('canchas.edit', $cancha) }}" class="btn btn-rs-action btn-rs-action-edit">Editar</a>
+                                <form action="{{ route('canchas.destroy', $cancha) }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="btn btn-rs-action btn-rs-action-delete" onclick="return confirm('¿Eliminar cancha?')">
+                                        Eliminar
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 @empty

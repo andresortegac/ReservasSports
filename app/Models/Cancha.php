@@ -9,6 +9,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Cancha extends Model
 {
+    public const DIAS_SEMANA = [
+        'lunes' => 'Lunes',
+        'martes' => 'Martes',
+        'miercoles' => 'Miércoles',
+        'jueves' => 'Jueves',
+        'viernes' => 'Viernes',
+        'sabado' => 'Sábado',
+        'domingo' => 'Domingo',
+    ];
+
     protected $fillable = [
         'parent_id',
         'orden',
@@ -16,16 +26,15 @@ class Cancha extends Model
         'tipo',
         'subcanchas_count',
         'precio_hora',
-        'hora_apertura',
-        'hora_cierre',
-        'intervalo_minutos',
-        'activa',
+        'dias_operacion',
+        'bloques_horarios',
         'estado_operativo',
         'descripcion',
     ];
 
     protected $casts = [
-        'activa' => 'boolean',
+        'dias_operacion' => 'array',
+        'bloques_horarios' => 'array',
         'precio_hora' => 'decimal:2',
     ];
 
@@ -60,25 +69,60 @@ class Cancha extends Model
 
     public function getTipoJerarquiaAttribute(): string
     {
-        if ($this->parent_id) {
-            return 'División';
-        }
-
-        if ($this->children_count > 0 || $this->relationLoaded('children') && $this->children->isNotEmpty()) {
-            return 'Principal';
-        }
-
-        return 'Individual';
+        return match ($this->tipo) {
+            'con_divisiones' => 'Cancha con divisiones',
+            'subcancha' => 'Subcancha',
+            default => 'Cancha independiente',
+        };
     }
 
     public function getEstadoLegibleAttribute(): string
     {
-        if (!$this->activa) {
-            return 'Inactiva';
-        }
+        return match ($this->estado_operativo) {
+            'mantenimiento' => 'Mantenimiento',
+            'fuera_de_servicio' => 'Fuera de servicio',
+            default => 'Disponible',
+        };
+    }
 
-        return $this->estado_operativo === 'mantenimiento'
-            ? 'Mantenimiento'
-            : 'Disponible';
+    public function getBloquesHorariosLegiblesAttribute(): string
+    {
+        $blocks = collect($this->bloques_horarios ?? [])
+            ->map(function ($block) {
+                $inicio = substr((string) ($block['inicio'] ?? ''), 0, 5);
+                $fin = substr((string) ($block['fin'] ?? ''), 0, 5);
+
+                if ($inicio === '' || $fin === '') {
+                    return null;
+                }
+
+                return "{$inicio} - {$fin}";
+            })
+            ->filter()
+            ->values();
+
+        return $blocks->isNotEmpty()
+            ? $blocks->implode(' / ')
+            : 'Sin horarios configurados';
+    }
+
+    public function getDiasOperacionLegiblesAttribute(): string
+    {
+        $days = collect($this->dias_operacion ?? [])
+            ->map(fn ($day) => self::DIAS_SEMANA[$day] ?? null)
+            ->filter()
+            ->values();
+
+        return $days->isNotEmpty()
+            ? $days->implode(', ')
+            : 'Sin días configurados';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function diasSemana(): array
+    {
+        return self::DIAS_SEMANA;
     }
 }

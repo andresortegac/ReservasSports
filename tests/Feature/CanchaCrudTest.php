@@ -11,6 +11,8 @@ class CanchaCrudTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const DIAS_OPERACION = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+
     public function test_authenticated_user_can_create_update_and_delete_canchas(): void
     {
         $user = User::factory()->create();
@@ -18,35 +20,38 @@ class CanchaCrudTest extends TestCase
         $this->actingAs($user)
             ->post(route('canchas.store'), [
                 'nombre' => 'Cancha Torneo',
-                'tipo' => 'futbol',
+                'tipo' => 'con_divisiones',
                 'parent_id' => null,
                 'orden' => 1,
-                'hora_apertura' => '06:00',
-                'hora_cierre' => '23:00',
-                'intervalo_minutos' => 60,
                 'precio_hora' => 220000,
                 'estado_operativo' => 'disponible',
-                'activa' => 1,
                 'descripcion' => 'Cancha grande para torneos.',
+                'dias_operacion' => self::DIAS_OPERACION,
+                'bloques_horarios' => [
+                    ['inicio' => '06:00', 'fin' => '12:00'],
+                    ['inicio' => '14:00', 'fin' => '18:00'],
+                ],
             ])
             ->assertRedirect(route('canchas.index'));
 
         $principal = Cancha::where('nombre', 'Cancha Torneo')->firstOrFail();
+        $this->assertSame('con_divisiones', $principal->tipo);
 
         foreach ([1, 2, 3] as $division) {
             $this->actingAs($user)
                 ->post(route('canchas.store'), [
-                    'nombre' => "Cancha Torneo - División {$division}",
-                    'tipo' => 'microfutbol',
+                    'nombre' => "Cancha Torneo - Division {$division}",
+                    'tipo' => 'subcancha',
                     'parent_id' => $principal->id,
                     'orden' => $division,
-                    'hora_apertura' => '06:00',
-                    'hora_cierre' => '23:00',
-                    'intervalo_minutos' => 60,
                     'precio_hora' => 80000,
                     'estado_operativo' => 'disponible',
-                    'activa' => 1,
-                    'descripcion' => "División {$division} de la cancha principal.",
+                    'descripcion' => "Division {$division} de la cancha principal.",
+                    'dias_operacion' => self::DIAS_OPERACION,
+                    'bloques_horarios' => [
+                        ['inicio' => '06:00', 'fin' => '12:00'],
+                        ['inicio' => '14:00', 'fin' => '18:00'],
+                    ],
                 ])
                 ->assertRedirect(route('canchas.index'));
         }
@@ -61,37 +66,37 @@ class CanchaCrudTest extends TestCase
         $this->actingAs($user)
             ->put(route('canchas.update', $divisionUno), [
                 'nombre' => $divisionUno->nombre,
-                'tipo' => $divisionUno->tipo,
+                'tipo' => 'subcancha',
                 'parent_id' => $principal->id,
                 'orden' => 1,
-                'hora_apertura' => '07:00',
-                'hora_cierre' => '22:00',
-                'intervalo_minutos' => 60,
                 'precio_hora' => 85000,
-                'estado_operativo' => 'mantenimiento',
-                'activa' => 1,
-                'descripcion' => 'División 1 en mantenimiento.',
+                'estado_operativo' => 'fuera_de_servicio',
+                'descripcion' => 'Division 1 fuera de servicio.',
+                'dias_operacion' => ['viernes', 'sabado', 'domingo'],
+                'bloques_horarios' => [
+                    ['inicio' => '07:00', 'fin' => '12:00'],
+                    ['inicio' => '15:00', 'fin' => '21:00'],
+                ],
             ])
             ->assertRedirect(route('canchas.index'));
 
-        $this->assertDatabaseHas('canchas', [
-            'id' => $divisionUno->id,
-            'precio_hora' => 85000,
-            'estado_operativo' => 'mantenimiento',
-            'hora_apertura' => '07:00',
-        ]);
+        $divisionUno->refresh();
+        $this->assertSame('fuera_de_servicio', $divisionUno->estado_operativo);
+        $this->assertSame('07:00', $divisionUno->bloques_horarios[0]['inicio']);
+        $this->assertSame(['viernes', 'sabado', 'domingo'], $divisionUno->dias_operacion);
+        $this->assertSame(85000.0, (float) $divisionUno->precio_hora);
 
         $standalone = Cancha::create([
             'nombre' => 'Cancha Auxiliar',
-            'tipo' => 'padel',
+            'tipo' => 'independiente',
             'parent_id' => null,
             'orden' => 1,
             'subcanchas_count' => 1,
             'precio_hora' => 50000,
-            'hora_apertura' => '08:00:00',
-            'hora_cierre' => '21:00:00',
-            'intervalo_minutos' => 60,
-            'activa' => true,
+            'dias_operacion' => self::DIAS_OPERACION,
+            'bloques_horarios' => [
+                ['inicio' => '08:00', 'fin' => '21:00'],
+            ],
             'estado_operativo' => 'disponible',
             'descripcion' => null,
         ]);

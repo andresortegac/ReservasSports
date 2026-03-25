@@ -31,38 +31,35 @@
                     </div>
                 </div>
 
-                <div class="section-title">General</div>
+                <div class="section-title">Panel Principal</div>
                 <a href="{{ route('dashboard') }}" class="nav-link-rs {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                     <span>Home</span>
-                    <span>01</span>
                 </a>
 
                 <div class="section-title">Reservas</div>
                 <a href="{{ route('reservas.index') }}" class="nav-link-rs {{ request()->routeIs('reservas.index') ? 'active' : '' }}">
                     <span>Gestionar reservas</span>
-                    <span>02</span>
                 </a>
                 <a href="{{ route('reservas.create') }}" class="nav-link-rs {{ request()->routeIs('reservas.create') ? 'active' : '' }}">
                     <span>Nueva reserva</span>
-                    <span>03</span>
                 </a>
                 <a href="{{ route('reservas.externas.index') }}" class="nav-link-rs {{ request()->routeIs('reservas.externas.*') ? 'active' : '' }}">
                     <span>Reservas externas</span>
-                    <span>04</span>
-                </a>
-                <a href="{{ route('canchas.index') }}" class="nav-link-rs {{ request()->routeIs('canchas.*') ? 'active' : '' }}">
-                    <span>Canchas</span>
-                    <span>05</span>
                 </a>
 
-                <div class="section-title">Operación</div>
+                <div class="section-title">Canchas</div>
+                <a href="{{ route('canchas.index') }}" class="nav-link-rs {{ request()->routeIs('canchas.*') ? 'active' : '' }}">
+                    <span>Canchas</span>
+                </a>
+
+                <div class="section-title">Clientes</div>
                 <a href="{{ route('clientes.index') }}" class="nav-link-rs {{ request()->routeIs('clientes.*') ? 'active' : '' }}">
                     <span>Clientes</span>
-                    <span>06</span>
                 </a>
+
+                <div class="section-title">Ventas</div>
                 <a href="{{ route('ventas.index') }}" class="nav-link-rs {{ request()->routeIs('ventas.*') ? 'active' : '' }}">
                     <span>Ventas y caja</span>
-                    <span>07</span>
                 </a>
 
                 <form action="{{ route('logout') }}" method="POST" class="mt-4">

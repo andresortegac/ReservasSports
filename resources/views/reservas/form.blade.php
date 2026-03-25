@@ -27,20 +27,16 @@
         <select name="cancha_id" id="cancha-select" class="form-select" required>
             <option value="">Seleccione una cancha</option>
             @foreach ($canchas as $cancha)
-                @php
-                    $tipoJerarquia = $cancha->tipo_jerarquia;
-                    $estadoLegible = $cancha->estado_legible;
-                @endphp
                 <option
                     value="{{ $cancha->id }}"
                     data-precio="{{ $cancha->precio_hora }}"
-                    data-apertura="{{ substr((string) $cancha->hora_apertura, 0, 5) }}"
-                    data-cierre="{{ substr((string) $cancha->hora_cierre, 0, 5) }}"
-                    data-intervalo="{{ $cancha->intervalo_minutos }}"
-                    data-estado="{{ $estadoLegible }}"
+                    data-bloques="{{ $cancha->bloques_horarios_legibles }}"
+                    data-dias="{{ $cancha->dias_operacion_legibles }}"
+                    data-estado="{{ $cancha->estado_legible }}"
+                    data-tipo="{{ $cancha->tipo_jerarquia }}"
                     {{ (string) $selectedCanchaId === (string) $cancha->id ? 'selected' : '' }}
                 >
-                    {{ $cancha->nombre_completo }} · {{ $tipoJerarquia }}
+                    {{ $cancha->nombre_completo }} · {{ $cancha->tipo_jerarquia }}
                 </option>
             @endforeach
         </select>
@@ -66,6 +62,7 @@
         <select name="hora" id="hora-select" class="form-select" required>
             <option value="">{{ $selectedCanchaId ? 'Cargando horarios...' : 'Seleccione primero una cancha' }}</option>
         </select>
+        <div class="form-text">Solo se muestran horarios exactos de una hora y en punto.</div>
         @error('hora')
             <div class="text-danger small">{{ $message }}</div>
         @enderror
@@ -130,10 +127,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         canchaMeta.textContent =
-            'Horario ' + option.dataset.apertura +
-            ' - ' + option.dataset.cierre +
-            ' · Intervalo ' + option.dataset.intervalo +
-            ' min · Estado ' + option.dataset.estado;
+            option.dataset.tipo +
+            ' · Dias ' + option.dataset.dias +
+            ' · Horarios ' + option.dataset.bloques +
+            ' · Estado ' + option.dataset.estado;
 
         if (forcePriceUpdate || (!isEditMode && (!precioInput.value || Number(precioInput.value) === 0))) {
             precioInput.value = option.dataset.precio || 0;

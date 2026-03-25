@@ -2,53 +2,50 @@
 
 namespace Database\Seeders;
 
+use App\Models\Cancha;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class CanchaSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = now();
+        $dias = array_keys(Cancha::diasSemana());
+        $bloques = [
+            ['inicio' => '06:00', 'fin' => '12:00'],
+            ['inicio' => '14:00', 'fin' => '18:00'],
+            ['inicio' => '19:00', 'fin' => '23:00'],
+        ];
 
-        DB::table('canchas')->updateOrInsert(
+        $principal = Cancha::query()->updateOrCreate(
             ['id' => 1],
             [
                 'parent_id' => null,
                 'orden' => 1,
                 'nombre' => 'Cancha Principal',
-                'tipo' => 'futbol',
+                'tipo' => 'con_divisiones',
                 'subcanchas_count' => 3,
                 'precio_hora' => 210000,
-                'hora_apertura' => '06:00:00',
-                'hora_cierre' => '23:00:00',
-                'intervalo_minutos' => 60,
-                'activa' => true,
+                'dias_operacion' => $dias,
+                'bloques_horarios' => $bloques,
                 'estado_operativo' => 'disponible',
                 'descripcion' => 'Cancha principal para torneos y partidos completos.',
-                'created_at' => $now,
-                'updated_at' => $now,
             ]
         );
 
         foreach ([1, 2, 3] as $division) {
-            DB::table('canchas')->updateOrInsert(
+            Cancha::query()->updateOrCreate(
                 ['id' => $division + 1],
                 [
-                    'parent_id' => 1,
+                    'parent_id' => $principal->id,
                     'orden' => $division,
-                    'nombre' => "Cancha Principal - División {$division}",
-                    'tipo' => 'microfutbol',
+                    'nombre' => "Cancha Principal - Division {$division}",
+                    'tipo' => 'subcancha',
                     'subcanchas_count' => 1,
                     'precio_hora' => 75000,
-                    'hora_apertura' => '06:00:00',
-                    'hora_cierre' => '23:00:00',
-                    'intervalo_minutos' => 60,
-                    'activa' => true,
+                    'dias_operacion' => $dias,
+                    'bloques_horarios' => $bloques,
                     'estado_operativo' => 'disponible',
-                    'descripcion' => "División {$division} de la cancha principal.",
-                    'created_at' => $now,
-                    'updated_at' => $now,
+                    'descripcion' => "Division {$division} de la cancha principal.",
                 ]
             );
         }

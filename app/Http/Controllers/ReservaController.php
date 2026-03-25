@@ -118,8 +118,15 @@ class ReservaController extends Controller
 
         $cancha = Cancha::with('parent')->findOrFail((int) $data['cancha_id']);
 
-        if ($issue = $this->availability->availabilityIssue($cancha)) {
+        if ($issue = $this->availability->dateAvailabilityIssue($cancha, (string) $data['fecha'])) {
             return $this->throwReservationValidation('cancha_id', $issue);
+        }
+
+        if (substr((string) $data['hora'], 3, 2) !== '00') {
+            return $this->throwReservationValidation(
+                'hora',
+                'Las reservas solo pueden comenzar en punto.'
+            );
         }
 
         $fecha = Carbon::parse((string) $data['fecha'])->toDateString();
@@ -128,7 +135,7 @@ class ReservaController extends Controller
         if (!in_array(substr($hora, 0, 5), $this->availability->timeSlotsFor($cancha), true)) {
             return $this->throwReservationValidation(
                 'hora',
-                'La hora elegida no está dentro del horario configurado para esta cancha.'
+                'La hora elegida no está dentro de los bloques horarios configurados para esta cancha.'
             );
         }
 
@@ -159,7 +166,7 @@ class ReservaController extends Controller
         $data['precio'] = $precio;
         $data['subcancha'] = 1;
         $data['user_id'] = auth()->id();
-        $data['duracion_minutos'] = (int) $cancha->intervalo_minutos;
+        $data['duracion_minutos'] = 60;
         $data['anticipo'] = 0;
         $data['saldo_pendiente'] = $estado === 'pagada' ? 0 : $precio;
         $data['estado_pago'] = $estado === 'pagada' ? 'pagado' : 'pendiente';

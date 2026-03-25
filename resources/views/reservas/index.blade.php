@@ -48,14 +48,16 @@
                             </span>
                         </td>
                         <td class="text-end">
-                            <a href="{{ route('reservas.edit', $reserva) }}" class="btn btn-outline-primary btn-sm">Editar</a>
-                            <form action="{{ route('reservas.destroy', $reserva) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button class="btn btn-outline-danger btn-sm" onclick="return confirm('¿Eliminar reserva?')">
-                                    Eliminar
-                                </button>
-                            </form>
+                            <div class="table-actions">
+                                <a href="{{ route('reservas.edit', $reserva) }}" class="btn btn-rs-action btn-rs-action-edit">Editar</a>
+                                <form action="{{ route('reservas.destroy', $reserva) }}" method="POST">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="btn btn-rs-action btn-rs-action-delete" onclick="return confirm('¿Eliminar reserva?')">
+                                        Eliminar
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 @empty
