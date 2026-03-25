@@ -1,0 +1,9 @@
+.page-ventas-index .ventas-total {
+    font-size: clamp(1.35rem, 2.2vw, 1.9rem);
+    margin-bottom: 0;
+}
+
+.page-ventas-index .ventas-table td,
+.page-ventas-index .ventas-table th {
+    vertical-align: middle;
+}

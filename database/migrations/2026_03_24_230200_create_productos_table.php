@@ -8,24 +8,24 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('clientes', function (Blueprint $table) {
+        Schema::create('productos', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
-            $table->string('telefono', 30)->nullable();
-            $table->string('email')->nullable();
-            $table->string('documento', 50)->nullable();
-            $table->text('notas')->nullable();
+            $table->string('sku')->nullable()->unique();
+            $table->text('descripcion')->nullable();
+            $table->decimal('precio_venta', 10, 2);
+            $table->decimal('costo', 10, 2)->default(0);
+            $table->integer('stock_actual')->default(0);
+            $table->integer('stock_minimo')->default(0);
             $table->boolean('activo')->default(true);
             $table->timestamps();
 
             $table->index('nombre');
-            $table->index('telefono');
-            $table->index('email');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('clientes');
+        Schema::dropIfExists('productos');
     }
 };

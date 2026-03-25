@@ -1,0 +1,13 @@
+.page-dashboard .dashboard-summary-card h2 {
+    font-size: clamp(1.4rem, 2.4vw, 2rem);
+}
+
+.page-dashboard .dashboard-actions {
+    gap: 0.75rem;
+}
+
+@media (max-width: 575.98px) {
+    .page-dashboard .dashboard-hero {
+        text-align: left;
+    }
+}

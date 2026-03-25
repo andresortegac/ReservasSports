@@ -1,0 +1,13 @@
+.form-control,
+.form-select {
+    border-radius: 14px;
+}
+
+.form-control-lg,
+.form-select-lg {
+    min-height: 3rem;
+}
+
+.form-check-input {
+    cursor: pointer;
+}

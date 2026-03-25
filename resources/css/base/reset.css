@@ -1,0 +1,18 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    color: var(--rs-text);
+    background:
+        radial-gradient(circle at top left, rgba(194, 65, 12, 0.12), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(20, 83, 45, 0.12), transparent 22%),
+        var(--rs-bg);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+a {
+    text-decoration: none;
+}

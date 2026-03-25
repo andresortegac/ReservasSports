@@ -9,3 +9,15 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+@import './base/variables.css';
+@import './base/reset.css';
+@import './layout/app-shell.css';
+@import './components/buttons.css';
+@import './components/forms.css';
+@import './components/tables.css';
+@import './views/auth/login.css';
+@import './views/dashboard/index.css';
+@import './views/clientes/index.css';
+@import './views/reservas/index.css';
+@import './views/ventas/index.css';

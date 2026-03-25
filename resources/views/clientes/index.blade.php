@@ -1,12 +1,14 @@
 @extends('layouts.app')
 
+@section('page-class', 'page-clientes-index')
+
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="clientes-header d-flex justify-content-between align-items-center mb-3">
     <h3>Clientes</h3>
     <a href="{{ route('clientes.create') }}" class="btn btn-success btn-sm">+ Nuevo cliente</a>
 </div>
 
-<form class="mb-2">
+<form class="clientes-filters mb-2">
     <label class="me-2">Periodo:</label>
     <select name="periodo" onchange="this.form.submit()" class="form-select form-select-sm w-auto d-inline">
         <option value="mes" {{ $periodo=='mes'?'selected':'' }}>Este mes</option>
@@ -16,7 +18,7 @@
 
 <div class="card shadow-sm">
     <div class="card-body table-responsive">
-        <table class="table table-striped">
+        <table class="table table-striped clientes-table">
             <thead>
                 <tr>
                     <th>Cliente</th>

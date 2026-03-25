@@ -1,0 +1,23 @@
+.btn-rs {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.8rem 1.2rem;
+    font-weight: 600;
+}
+
+.btn-rs-primary {
+    color: #fff;
+    background: linear-gradient(135deg, var(--rs-primary), #166534);
+}
+
+.btn-rs-light {
+    color: var(--rs-primary);
+    background: rgba(20, 83, 45, 0.08);
+}
+
+@media (max-width: 767.98px) {
+    .btn-rs {
+        width: 100%;
+        justify-content: center;
+    }
+}

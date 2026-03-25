@@ -1,0 +1,20 @@
+.page-reservas-index .reservas-header {
+    gap: 1rem;
+}
+
+.page-reservas-index .reservas-table td,
+.page-reservas-index .reservas-table th {
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+    .page-reservas-index .reservas-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .page-reservas-index .reservas-header .btn {
+        width: 100%;
+    }
+}

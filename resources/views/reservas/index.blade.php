@@ -1,7 +1,9 @@
 @extends('layouts.app')
 
+@section('page-class', 'page-reservas-index')
+
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="reservas-header d-flex justify-content-between align-items-center mb-3">
     <h3>Reservas Champions Clud</h3>
     <a href="{{ route('reservas.create') }}" class="btn btn-primary btn-sm">
         + Nueva reserva
@@ -18,7 +20,7 @@
 
 <div class="card shadow-sm">
     <div class="card-body table-responsive">
-        <table class="table table-striped align-middle">
+        <table class="table table-striped align-middle reservas-table">
             <thead>
                 <tr>
                     <th>ID</th>

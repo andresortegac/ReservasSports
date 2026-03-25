@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('page-class', 'page-ventas-index')
+
 @section('content')
 <h3 class="mb-3">Ventas</h3>
 
@@ -8,7 +10,7 @@
         <div class="card shadow-sm">
             <div class="card-body">
                 <small class="text-muted">Hoy</small>
-                <h4>${{ number_format($ventasDia,0,',','.') }}</h4>
+                <h4 class="ventas-total">${{ number_format($ventasDia,0,',','.') }}</h4>
             </div>
         </div>
     </div>
@@ -16,7 +18,7 @@
         <div class="card shadow-sm">
             <div class="card-body">
                 <small class="text-muted">Esta semana</small>
-                <h4>${{ number_format($ventasSemana,0,',','.') }}</h4>
+                <h4 class="ventas-total">${{ number_format($ventasSemana,0,',','.') }}</h4>
             </div>
         </div>
     </div>
@@ -24,7 +26,7 @@
         <div class="card shadow-sm">
             <div class="card-body">
                 <small class="text-muted">Este mes</small>
-                <h4>${{ number_format($ventasMes,0,',','.') }}</h4>
+                <h4 class="ventas-total">${{ number_format($ventasMes,0,',','.') }}</h4>
             </div>
         </div>
     </div>
@@ -33,7 +35,7 @@
 <div class="card shadow-sm">
     <div class="card-body table-responsive">
         <h6>Detalle de ventas de hoy</h6>
-        <table class="table table-striped">
+        <table class="table table-striped ventas-table">
             <thead>
                 <tr>
                     <th>Cliente</th>
