@@ -49,6 +49,33 @@
         <select name="cancha_id" id="cancha-select" class="form-select" required>
             <option value="">Seleccione una cancha</option>
             @foreach ($canchas as $cancha)
+                @php
+                    $timeSlots = collect($cancha->bloques_horarios ?? [])
+                        ->flatMap(function ($block) {
+                            $inicio = substr((string) ($block['inicio'] ?? ''), 0, 5);
+                            $fin = substr((string) ($block['fin'] ?? ''), 0, 5);
+
+                            if ($inicio === '' || $fin === '') {
+                                return [];
+                            }
+
+                            $inicioMinutos = ((int) substr($inicio, 0, 2) * 60) + (int) substr($inicio, 3, 2);
+                            $finMinutos = ((int) substr($fin, 0, 2) * 60) + (int) substr($fin, 3, 2);
+
+                            if ($inicioMinutos >= $finMinutos) {
+                                return [];
+                            }
+
+                            $slots = [];
+                            for ($minutos = $inicioMinutos; $minutos < $finMinutos; $minutos += 60) {
+                                $slots[] = sprintf('%02d:%02d', intdiv($minutos, 60), $minutos % 60);
+                            }
+
+                            return $slots;
+                        })
+                        ->unique()
+                        ->values();
+                @endphp
                 <option
                     value="{{ $cancha->id }}"
                     data-precio="{{ $cancha->precio_hora }}"
@@ -56,6 +83,7 @@
                     data-dias="{{ $cancha->dias_operacion_legibles }}"
                     data-estado="{{ $cancha->estado_legible }}"
                     data-tipo="{{ $cancha->tipo_jerarquia }}"
+                    data-slots='@json($timeSlots)'
                     {{ (string) $selectedCanchaId === (string) $cancha->id ? 'selected' : '' }}
                 >
                     {{ $cancha->nombre_completo }} · {{ $cancha->tipo_jerarquia }}
@@ -88,6 +116,26 @@
         @error('hora')
             <div class="text-danger small">{{ $message }}</div>
         @enderror
+    </div>
+
+    <div class="col-12">
+        <div class="border rounded-3 p-3 bg-light-subtle">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-3">
+                <div>
+                    <div class="fw-semibold">Horarios disponibles</div>
+                    <div id="availability-status" class="text-muted small">
+                        Selecciona una cancha y una fecha para consultar disponibilidad.
+                    </div>
+                </div>
+                <span id="availability-count" class="badge text-bg-secondary align-self-start align-self-lg-center">
+                    Sin consulta
+                </span>
+            </div>
+
+            <div id="availability-slots" class="d-flex flex-wrap gap-2">
+                <span class="text-muted small">Todavia no hay horarios para mostrar.</span>
+            </div>
+        </div>
     </div>
 
     <div class="col-md-3">
@@ -164,10 +212,26 @@ document.addEventListener('DOMContentLoaded', function () {
     const descuentoInput = document.getElementById('descuento');
     const precioTotalInput = document.getElementById('precio-total');
     const canchaMeta = document.getElementById('cancha-meta');
+    const availabilityStatus = document.getElementById('availability-status');
+    const availabilityCount = document.getElementById('availability-count');
+    const availabilitySlots = document.getElementById('availability-slots');
     const oldHora = @json($oldHora);
     const ignoreReservationId = @json($reserva->id ?? null);
+    let preferredHour = oldHora || '';
+    let currentRequestId = 0;
 
-    if (!canchaSelect || !fechaInput || !horaSelect || !precioBaseInput || !descuentoInput || !precioTotalInput || !canchaMeta) {
+    if (
+        !canchaSelect ||
+        !fechaInput ||
+        !horaSelect ||
+        !precioBaseInput ||
+        !descuentoInput ||
+        !precioTotalInput ||
+        !canchaMeta ||
+        !availabilityStatus ||
+        !availabilityCount ||
+        !availabilitySlots
+    ) {
         return;
     }
 
@@ -187,12 +251,69 @@ document.addEventListener('DOMContentLoaded', function () {
         precioTotalInput.value = formatAmount(total);
     }
 
+    function setAvailabilitySummary(message, countLabel) {
+        availabilityStatus.textContent = message;
+        availabilityCount.textContent = countLabel;
+    }
+
+    function configuredSlotsFor(option) {
+        if (!option || !option.value) {
+            return [];
+        }
+
+        try {
+            const slots = JSON.parse(option.dataset.slots || '[]');
+            return Array.isArray(slots) ? slots : [];
+        } catch (error) {
+            console.error(error);
+            return [];
+        }
+    }
+
+    function renderAvailabilityButtons(allHours, availableHours, selectedHour) {
+        availabilitySlots.innerHTML = '';
+
+        if (!allHours.length) {
+            availabilitySlots.innerHTML = '<span class="text-muted small">No hay horarios disponibles para mostrar.</span>';
+            return;
+        }
+
+        allHours.forEach(function (hour) {
+            const isAvailable = availableHours.includes(hour);
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn btn-sm ' + (
+                selectedHour === hour
+                    ? 'btn-primary'
+                    : (isAvailable ? 'btn-outline-primary' : 'btn-outline-secondary')
+            );
+            button.textContent = hour;
+            button.dataset.hour = hour;
+
+            if (isAvailable) {
+                button.addEventListener('click', function () {
+                    horaSelect.value = hour;
+                    preferredHour = hour;
+                    renderAvailabilityButtons(allHours, availableHours, hour);
+                });
+            } else {
+                button.disabled = true;
+                button.title = 'Horario reservado';
+                button.setAttribute('aria-label', hour + ' reservado');
+            }
+
+            availabilitySlots.appendChild(button);
+        });
+    }
+
     function updateCanchaMeta(forceBaseUpdate) {
         const option = selectedOption();
 
         if (!option || !option.value) {
             canchaMeta.textContent = 'Selecciona una cancha para cargar horarios y precio base.';
             precioBaseInput.value = formatAmount(0);
+            setAvailabilitySummary('Selecciona una cancha y una fecha para consultar disponibilidad.', 'Sin consulta');
+            renderAvailabilityButtons([], [], '');
             updateTotal();
             return;
         }
@@ -214,15 +335,24 @@ document.addEventListener('DOMContentLoaded', function () {
         const option = selectedOption();
         if (!option || !option.value || !fechaInput.value) {
             horaSelect.innerHTML = '<option value="">Seleccione cancha y fecha</option>';
+            setAvailabilitySummary('Selecciona una cancha y una fecha para consultar disponibilidad.', 'Sin consulta');
+            renderAvailabilityButtons([], [], '');
             return;
         }
 
+        currentRequestId += 1;
+        const requestId = currentRequestId;
+        const allHours = configuredSlotsFor(option);
         const url = new URL(@json(route('reservas.horas-disponibles')), window.location.origin);
         url.searchParams.set('cancha_id', option.value);
         url.searchParams.set('fecha', fechaInput.value);
         if (ignoreReservationId) {
             url.searchParams.set('ignore_reserva_id', ignoreReservationId);
         }
+
+        horaSelect.innerHTML = '<option value="">Cargando horarios...</option>';
+        setAvailabilitySummary('Consultando disponibilidad de la cancha seleccionada...', 'Cargando');
+        availabilitySlots.innerHTML = '<span class="text-muted small">Consultando horarios disponibles...</span>';
 
         try {
             const response = await fetch(url.toString(), {
@@ -237,37 +367,72 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const hours = await response.json();
+            if (requestId !== currentRequestId) {
+                return;
+            }
+
             horaSelect.innerHTML = '';
 
             if (!hours.length) {
                 horaSelect.innerHTML = '<option value="">No hay horarios disponibles</option>';
+                preferredHour = '';
+                setAvailabilitySummary(
+                    'No encontramos horarios libres para esta cancha en la fecha elegida. Los bloqueados indican que ya están reservados.',
+                    '0 disponibles'
+                );
+                renderAvailabilityButtons(allHours, [], '');
                 return;
             }
 
             horaSelect.innerHTML = '<option value="">Seleccione una hora</option>';
+            const selectedHour = hours.includes(horaSelect.value)
+                ? horaSelect.value
+                : (hours.includes(preferredHour) ? preferredHour : '');
 
             hours.forEach(function (hour) {
                 const optionElement = document.createElement('option');
                 optionElement.value = hour;
                 optionElement.textContent = hour;
-                if (oldHora === hour) {
+                if (selectedHour === hour) {
                     optionElement.selected = true;
                 }
                 horaSelect.appendChild(optionElement);
             });
+
+            horaSelect.value = selectedHour;
+            setAvailabilitySummary(
+                'Puedes elegir los horarios libres. Los bloqueados indican que ya están reservados.',
+                hours.length === 1 ? '1 disponible' : hours.length + ' disponibles'
+            );
+            renderAvailabilityButtons(allHours, hours, selectedHour);
         } catch (error) {
             console.error(error);
             horaSelect.innerHTML = '<option value="">Error al cargar horarios</option>';
+            preferredHour = '';
+            setAvailabilitySummary('No fue posible cargar la disponibilidad en este momento.', 'Error');
+            availabilitySlots.innerHTML = '<span class="text-danger small">Ocurrio un error consultando los horarios.</span>';
         }
     }
 
     canchaSelect.addEventListener('change', function () {
+        preferredHour = '';
         updateCanchaMeta(true);
         loadHours();
     });
 
     fechaInput.addEventListener('change', loadHours);
     descuentoInput.addEventListener('input', updateTotal);
+    horaSelect.addEventListener('change', function () {
+        preferredHour = horaSelect.value;
+
+        const hours = Array.from(horaSelect.options)
+            .map(function (option) {
+                return option.value;
+            })
+            .filter(Boolean);
+
+        renderAvailabilityButtons(configuredSlotsFor(selectedOption()), hours, preferredHour);
+    });
 
     updateCanchaMeta(false);
     if (canchaSelect.value && fechaInput.value) {

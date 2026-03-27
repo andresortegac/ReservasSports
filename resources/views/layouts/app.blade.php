@@ -11,6 +11,7 @@
         <script src="{{ asset('js/app.js') }}" defer></script>
     @endif
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 </head>
 <body class="@yield('page-class')">
     @auth
@@ -33,38 +34,61 @@
 
                 <div class="section-title">Panel Principal</div>
                 <a href="{{ route('dashboard') }}" class="nav-link-rs {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <span>Home</span>
+                    <span class="nav-link-main">
+                        <i class="bi bi-house-door nav-link-icon" aria-hidden="true"></i>
+                        <span>Home</span>
+                    </span>
                 </a>
 
                 <div class="section-title">Reservas</div>
                 <a href="{{ route('reservas.index') }}" class="nav-link-rs {{ request()->routeIs('reservas.index') ? 'active' : '' }}">
-                    <span>Gestionar reservas</span>
+                    <span class="nav-link-main">
+                        <i class="bi bi-calendar-check nav-link-icon" aria-hidden="true"></i>
+                        <span>Gestionar reservas</span>
+                    </span>
                 </a>
                 <a href="{{ route('reservas.create') }}" class="nav-link-rs {{ request()->routeIs('reservas.create') ? 'active' : '' }}">
-                    <span>Nueva reserva</span>
+                    <span class="nav-link-main">
+                        <i class="bi bi-calendar-plus nav-link-icon" aria-hidden="true"></i>
+                        <span>Nueva reserva</span>
+                    </span>
                 </a>
                 <a href="{{ route('reservas.externas.index') }}" class="nav-link-rs {{ request()->routeIs('reservas.externas.*') ? 'active' : '' }}">
-                    <span>Reservas externas</span>
+                    <span class="nav-link-main">
+                        <i class="bi bi-globe-americas nav-link-icon" aria-hidden="true"></i>
+                        <span>Reservas externas</span>
+                    </span>
                 </a>
 
                 <div class="section-title">Canchas</div>
                 <a href="{{ route('canchas.index') }}" class="nav-link-rs {{ request()->routeIs('canchas.*') ? 'active' : '' }}">
-                    <span>Canchas</span>
+                    <span class="nav-link-main">
+                        <i class="bi bi-bounding-box nav-link-icon" aria-hidden="true"></i>
+                        <span>Canchas</span>
+                    </span>
                 </a>
 
                 <div class="section-title">Clientes</div>
                 <a href="{{ route('clientes.index') }}" class="nav-link-rs {{ request()->routeIs('clientes.*') ? 'active' : '' }}">
-                    <span>Clientes</span>
+                    <span class="nav-link-main">
+                        <i class="bi bi-people nav-link-icon" aria-hidden="true"></i>
+                        <span>Clientes</span>
+                    </span>
                 </a>
 
                 <div class="section-title">Ventas</div>
                 <a href="{{ route('ventas.index') }}" class="nav-link-rs {{ request()->routeIs('ventas.*') ? 'active' : '' }}">
-                    <span>Ventas y caja</span>
+                    <span class="nav-link-main">
+                        <i class="bi bi-cash-stack nav-link-icon" aria-hidden="true"></i>
+                        <span>Ventas y caja</span>
+                    </span>
                 </a>
 
                 <form action="{{ route('logout') }}" method="POST" class="mt-4">
                     @csrf
-                    <button type="submit" class="btn btn-rs btn-rs-danger w-100">Cerrar sesión</button>
+                    <button type="submit" class="btn btn-rs btn-rs-danger w-100">
+                        <i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i>Cerrar sesión
+                    </button>
                 </form>
             </aside>
 

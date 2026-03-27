@@ -80,6 +80,23 @@
     transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
+.nav-link-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    min-width: 0;
+}
+
+.nav-link-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.15rem;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.78);
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
 .nav-link-rs:hover,
 .nav-link-rs:focus,
 .nav-link-rs:active,
@@ -88,6 +105,14 @@
     background: rgba(217, 249, 157, 0.14);
     text-decoration: none;
     transform: translateX(2px);
+}
+
+.nav-link-rs:hover .nav-link-icon,
+.nav-link-rs:focus .nav-link-icon,
+.nav-link-rs:active .nav-link-icon,
+.nav-link-rs.active .nav-link-icon {
+    color: #d9f99d;
+    transform: scale(1.05);
 }
 
 .content-wrap {
