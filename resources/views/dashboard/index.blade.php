@@ -6,8 +6,8 @@
 <div class="dashboard-hero d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
     <div>
         <span class="badge text-bg-success rounded-pill px-3 py-2 mb-2">Home administrativo</span>
-        <h1 class="h3 mb-2">Operación central de la cancha</h1>
-        <p class="text-muted mb-0">Desde aquí puedes controlar reservas, clientes, cobros y seguimiento diario del negocio.</p>
+        <h1 class="h3 mb-2">Operacion central de la cancha</h1>
+        <p class="text-muted mb-0">Desde aqui puedes controlar reservas, clientes, cobros y seguimiento diario del negocio.</p>
     </div>
     <div class="dashboard-actions d-flex flex-wrap">
         <a href="{{ route('reservas.create') }}" class="btn btn-rs btn-rs-primary">Crear reserva</a>
@@ -31,7 +31,7 @@
             <div class="card-body dashboard-summary-card">
                 <p class="text-muted mb-2">Cobros pendientes</p>
                 <h2 class="mb-1">{{ $metrics['pendientesCobro'] }}</h2>
-                <small class="text-muted">Reservas aún sin pago completo</small>
+                <small class="text-muted">Reservas aun sin pago completo</small>
             </div>
         </div>
     </div>
@@ -40,7 +40,7 @@
             <div class="card-body dashboard-summary-card">
                 <p class="text-muted mb-2">Ingresos hoy</p>
                 <h2 class="mb-1">${{ number_format($metrics['ingresosHoy'], 0, ',', '.') }}</h2>
-                <small class="text-muted">Pagos confirmados del día</small>
+                <small class="text-muted">Cobros registrados del dia</small>
             </div>
         </div>
     </div>
@@ -56,52 +56,67 @@
 </div>
 
 <div class="row g-4">
-    <div class="col-xl-7">
+    <div class="col-xl-8">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3 gap-3 flex-wrap">
                     <div>
-                        <h3 class="h5 mb-1">Próximas reservas</h3>
-                        <p class="text-muted mb-0">Vista rápida para la operación del día y siguientes turnos.</p>
+                        <h3 class="h5 mb-1">Ganancias de este mes</h3>
+                        <p class="text-muted mb-0">Distribucion circular de los ingresos cobrados en {{ ucfirst($monthLabel) }}.</p>
                     </div>
-                    <a href="{{ route('reservas.index') }}" class="btn btn-sm btn-outline-dark rounded-pill">Ver todas</a>
+                    <span class="badge text-bg-light border">${{ number_format($gananciasPorDia->sum('total'), 0, ',', '.') }}</span>
                 </div>
 
-                @if ($proximasReservas->isEmpty())
-                    <div class="alert alert-light border mb-0">No hay reservas próximas registradas.</div>
+                @if ($gananciasPorDia->sum('total') <= 0)
+                    <div class="alert alert-light border mb-0">Todavia no hay ingresos registrados este mes para graficar.</div>
                 @else
-                    <div class="table-responsive">
-                        <table class="table align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Cliente</th>
-                                    <th>Fecha</th>
-                                    <th>Hora</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($proximasReservas as $reserva)
-                                    <tr>
-                                        <td>{{ $reserva->cliente->nombre ?? 'Sin cliente' }}</td>
-                                        <td>{{ \Carbon\Carbon::parse($reserva->fecha)->format('d/m/Y') }}</td>
-                                        <td>{{ substr($reserva->hora, 0, 5) }}</td>
-                                        <td>
-                                            <span class="badge rounded-pill text-bg-{{ $reserva->estado === 'pagada' ? 'success' : ($reserva->estado === 'pendiente' ? 'warning' : 'secondary') }}">
-                                                {{ ucfirst($reserva->estado) }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                    @php
+                        $pieColors = ['#198754', '#20c997', '#0d6efd', '#6f42c1', '#fd7e14', '#dc3545', '#ffc107', '#6c757d', '#6610f2', '#198754', '#fd9843', '#0dcaf0'];
+                        $gananciasConValor = $gananciasPorDia->filter(fn ($item) => $item['total'] > 0)->values();
+                        $pieSegments = [];
+                        $currentDeg = 0;
+                        $totalGananciasMes = (float) $gananciasConValor->sum('total');
+
+                        foreach ($gananciasConValor as $index => $item) {
+                            $portion = $totalGananciasMes > 0 ? ($item['total'] / $totalGananciasMes) * 360 : 0;
+                            $start = $currentDeg;
+                            $end = $currentDeg + $portion;
+                            $color = $pieColors[$index % count($pieColors)];
+                            $pieSegments[] = "{$color} {$start}deg {$end}deg";
+                            $currentDeg = $end;
+                        }
+
+                        $pieBackground = 'conic-gradient(' . implode(', ', $pieSegments) . ')';
+                    @endphp
+
+                    <div class="dashboard-pie-layout">
+                        <div class="dashboard-pie-card">
+                            <div class="dashboard-pie-chart" style="background: {{ $pieBackground }};">
+                                <div class="dashboard-pie-center">
+                                    <span>Total mes</span>
+                                    <strong>${{ number_format($totalGananciasMes, 0, ',', '.') }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-pie-legend">
+                            @foreach ($gananciasConValor as $index => $item)
+                                <div class="dashboard-pie-legend-item">
+                                    <span class="dashboard-pie-legend-color" style="background-color: {{ $pieColors[$index % count($pieColors)] }};"></span>
+                                    <div class="dashboard-pie-legend-text">
+                                        <strong>{{ \Carbon\Carbon::parse($item['fecha'])->format('d/m') }}</strong>
+                                        <span>${{ number_format($item['total'], 0, ',', '.') }}</span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 @endif
             </div>
         </div>
     </div>
 
-    <div class="col-xl-5">
+    <div class="col-xl-4">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body">
                 <h3 class="h5 mb-3">Estado general</h3>
@@ -128,9 +143,9 @@
 
                 <hr class="my-4">
 
-                <h3 class="h5 mb-3">Horas más reservadas del mes</h3>
+                <h3 class="h5 mb-3">Horas mas reservadas del mes</h3>
                 @if ($horasMasReservadas->isEmpty())
-                    <div class="alert alert-light border mb-0">Aún no hay suficiente información para mostrar tendencias.</div>
+                    <div class="alert alert-light border mb-0">Aun no hay suficiente informacion para mostrar tendencias.</div>
                 @else
                     <div class="d-grid gap-2">
                         @foreach ($horasMasReservadas as $franja)
@@ -147,52 +162,37 @@
 </div>
 
 <div class="row g-4 mt-1">
-    <div class="col-lg-8">
+    <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-body">
-                <h3 class="h5 mb-3">Mapa funcional del sistema</h3>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="border rounded-4 p-3 h-100">
-                            <h4 class="h6">Reservas y calendario</h4>
-                            <p class="text-muted mb-3">Creación, validación de horarios ocupados, cambios y seguimiento de estados.</p>
-                            <a href="{{ route('reservas.index') }}" class="btn btn-sm btn-outline-success rounded-pill">Abrir módulo</a>
-                        </div>
+                <div class="d-flex justify-content-between align-items-center mb-3 gap-3 flex-wrap">
+                    <div>
+                        <h3 class="h5 mb-1">Reservas realizadas este mes por cancha</h3>
+                        <p class="text-muted mb-0">Conteo de reservas activas registradas en {{ ucfirst($monthLabel) }}.</p>
                     </div>
-                    <div class="col-md-6">
-                        <div class="border rounded-4 p-3 h-100">
-                            <h4 class="h6">Clientes</h4>
-                            <p class="text-muted mb-3">Base de clientes y trazabilidad para promociones o historial de reservas.</p>
-                            <a href="{{ route('clientes.index') }}" class="btn btn-sm btn-outline-success rounded-pill">Abrir módulo</a>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="border rounded-4 p-3 h-100">
-                            <h4 class="h6">Caja y ventas</h4>
-                            <p class="text-muted mb-3">Ingreso diario, semanal y mensual de lo que ya está registrado en reservas.</p>
-                            <a href="{{ route('ventas.index') }}" class="btn btn-sm btn-outline-success rounded-pill">Abrir módulo</a>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="border rounded-4 p-3 h-100 bg-light">
-                            <h4 class="h6">Siguiente fase</h4>
-                            <p class="text-muted mb-0">Inventario, POS detallado, pagos parciales, cierre de caja y reportes avanzados quedan listos para la siguiente iteración.</p>
-                        </div>
-                    </div>
+                    <span class="badge text-bg-light border">{{ $reservasPorCancha->sum('total') }} reservas</span>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h3 class="h5 mb-3">Accesos rápidos</h3>
-                <div class="d-grid gap-2">
-                    <a href="{{ route('reservas.create') }}" class="btn btn-success rounded-pill">Registrar nueva reserva</a>
-                    <a href="{{ route('reservas.externas.index') }}" class="btn btn-outline-dark rounded-pill">Consultar reservas externas</a>
-                    <a href="{{ route('ventas.index') }}" class="btn btn-outline-dark rounded-pill">Revisar ingresos</a>
-                </div>
+                @if ($reservasPorCancha->isEmpty() || $maxReservasCancha === 0)
+                    <div class="alert alert-light border mb-0">Todavia no hay reservas este mes para comparar por cancha.</div>
+                @else
+                    <div class="d-grid gap-3">
+                        @foreach ($reservasPorCancha as $item)
+                            @php
+                                $width = $maxReservasCancha > 0 ? max(4, ($item['total'] / $maxReservasCancha) * 100) : 0;
+                            @endphp
+                            <div class="dashboard-bar-row">
+                                <div class="dashboard-bar-header">
+                                    <span>{{ $item['nombre'] }}</span>
+                                    <strong>{{ $item['total'] }}</strong>
+                                </div>
+                                <div class="dashboard-bar-track">
+                                    <div class="dashboard-bar-fill" style="width: {{ $width }}%;"></div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </div>
     </div>

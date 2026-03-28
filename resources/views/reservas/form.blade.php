@@ -1,4 +1,8 @@
 @php
+    $today = \Illuminate\Support\Carbon::today()->toDateString();
+    $minimumDate = $reserva->exists && optional($reserva->fecha)->lt(\Illuminate\Support\Carbon::today())
+        ? optional($reserva->fecha)->format('Y-m-d')
+        : $today;
     $selectedCanchaId = old('cancha_id', $reserva->cancha_id ?? null);
     $selectedCancha = $canchas->firstWhere('id', $selectedCanchaId);
     $descuento = old('descuento', $reserva->descuento ?? 0);
@@ -24,7 +28,14 @@
         $precioTotalVisual = 0;
     }
 
-    $estado = old('estado', $reserva->estado ?? 'confirmada');
+    $estado = old(
+        'estado',
+        ($reserva->estado_pago ?? 'pendiente') === 'parcial'
+            ? 'abonado'
+            : ($reserva->estado ?? 'confirmada')
+    );
+    $anticipo = old('anticipo', $reserva->anticipo ?? 0);
+    $metodoPagoPrincipal = old('metodo_pago_principal', $reserva->metodo_pago_principal ?? '');
     $oldHora = old('hora', $reserva->hora_inicio ?? '');
 @endphp
 
@@ -103,6 +114,7 @@
             id="fecha"
             class="form-control"
             value="{{ old('fecha', optional($reserva->fecha)->format('Y-m-d')) }}"
+            min="{{ $minimumDate }}"
             required
         >
     </div>
@@ -189,11 +201,43 @@
                 <option value="pendiente" {{ $estado === 'pendiente' ? 'selected' : '' }}>Pendiente</option>
             @endif
             <option value="confirmada" {{ $estado === 'confirmada' ? 'selected' : '' }}>Confirmada</option>
+            <option value="abonado" {{ $estado === 'abonado' ? 'selected' : '' }}>Abonado</option>
             <option value="pagada" {{ $estado === 'pagada' ? 'selected' : '' }}>Pagada</option>
             @if ($reserva->exists)
                 <option value="cancelada" {{ $estado === 'cancelada' ? 'selected' : '' }}>Cancelada</option>
             @endif
         </select>
+    </div>
+
+    <div class="col-md-3 d-none" id="anticipo-group">
+        <label class="form-label" for="anticipo">Cuanto abona</label>
+        <input
+            type="number"
+            name="anticipo"
+            id="anticipo"
+            step="0.01"
+            class="form-control"
+            value="{{ number_format((float) $anticipo, 2, '.', '') }}"
+            min="0"
+        >
+        <div class="form-text" id="anticipo-help">Ingresa el valor abonado por el cliente.</div>
+        @error('anticipo')
+            <div class="text-danger small">{{ $message }}</div>
+        @enderror
+    </div>
+
+    <div class="col-md-3 d-none" id="metodo-pago-group">
+        <label class="form-label" for="metodo_pago_principal">Forma de pago</label>
+        <select name="metodo_pago_principal" id="metodo_pago_principal" class="form-select">
+            <option value="">Seleccione una forma de pago</option>
+            <option value="efectivo" {{ $metodoPagoPrincipal === 'efectivo' ? 'selected' : '' }}>Efectivo</option>
+            <option value="transferencia" {{ $metodoPagoPrincipal === 'transferencia' ? 'selected' : '' }}>Transferencia</option>
+            <option value="otro" {{ $metodoPagoPrincipal === 'otro' ? 'selected' : '' }}>Otro</option>
+        </select>
+        <div class="form-text" id="metodo-pago-help">Selecciona como se realizo el pago.</div>
+        @error('metodo_pago_principal')
+            <div class="text-danger small">{{ $message }}</div>
+        @enderror
     </div>
 
     <div class="col-12">
@@ -211,12 +255,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const precioBaseInput = document.getElementById('precio-base');
     const descuentoInput = document.getElementById('descuento');
     const precioTotalInput = document.getElementById('precio-total');
+    const estadoSelect = document.getElementById('estado');
+    const anticipoGroup = document.getElementById('anticipo-group');
+    const anticipoInput = document.getElementById('anticipo');
+    const anticipoHelp = document.getElementById('anticipo-help');
+    const metodoPagoGroup = document.getElementById('metodo-pago-group');
+    const metodoPagoSelect = document.getElementById('metodo_pago_principal');
+    const metodoPagoHelp = document.getElementById('metodo-pago-help');
     const canchaMeta = document.getElementById('cancha-meta');
     const availabilityStatus = document.getElementById('availability-status');
     const availabilityCount = document.getElementById('availability-count');
     const availabilitySlots = document.getElementById('availability-slots');
     const oldHora = @json($oldHora);
     const ignoreReservationId = @json($reserva->id ?? null);
+    const today = @json($today);
     let preferredHour = oldHora || '';
     let currentRequestId = 0;
 
@@ -227,6 +279,13 @@ document.addEventListener('DOMContentLoaded', function () {
         !precioBaseInput ||
         !descuentoInput ||
         !precioTotalInput ||
+        !estadoSelect ||
+        !anticipoGroup ||
+        !anticipoInput ||
+        !anticipoHelp ||
+        !metodoPagoGroup ||
+        !metodoPagoSelect ||
+        !metodoPagoHelp ||
         !canchaMeta ||
         !availabilityStatus ||
         !availabilityCount ||
@@ -249,6 +308,45 @@ document.addEventListener('DOMContentLoaded', function () {
         const total = Math.max(0, precioBase - descuento);
 
         precioTotalInput.value = formatAmount(total);
+        syncPaymentFields();
+    }
+
+    function syncPaymentFields() {
+        const estado = estadoSelect.value;
+        const total = Number(precioTotalInput.value || 0);
+        const showMetodoPago = (estado === 'pagada' || estado === 'abonado') && total > 0;
+        const showAnticipo = estado === 'abonado' && total > 0;
+
+        anticipoGroup.classList.toggle('d-none', !showAnticipo);
+        metodoPagoGroup.classList.toggle('d-none', !showMetodoPago);
+
+        anticipoInput.required = showAnticipo;
+        metodoPagoSelect.required = showMetodoPago;
+        anticipoInput.max = formatAmount(total);
+
+        if (showAnticipo) {
+            anticipoHelp.textContent = 'Ingresa un abono mayor a 0 y menor al total final.';
+        } else {
+            anticipoHelp.textContent = 'Ingresa el valor abonado por el cliente.';
+        }
+
+        if (estado === 'pagada' && total > 0) {
+            anticipoInput.value = formatAmount(total);
+            anticipoInput.required = false;
+            anticipoHelp.textContent = 'El sistema tomara el total final como pago completo.';
+            metodoPagoHelp.textContent = 'Selecciona la forma de pago del total cancelado.';
+        } else if (estado === 'abonado' && total > 0) {
+            if (Number(anticipoInput.value || 0) >= total) {
+                anticipoInput.value = '';
+            }
+            metodoPagoHelp.textContent = 'Selecciona la forma de pago del abono.';
+        } else {
+            if (estado !== 'abonado') {
+                anticipoInput.value = '0.00';
+            }
+            metodoPagoSelect.value = '';
+            metodoPagoHelp.textContent = 'Selecciona como se realizo el pago.';
+        }
     }
 
     function setAvailabilitySummary(message, countLabel) {
@@ -270,6 +368,18 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function isPastHourForSelectedDate(hour) {
+        if (!fechaInput.value || fechaInput.value !== today) {
+            return false;
+        }
+
+        const now = new Date();
+        const currentHour = String(now.getHours()).padStart(2, '0');
+        const currentMinute = String(now.getMinutes()).padStart(2, '0');
+
+        return hour < (currentHour + ':' + currentMinute);
+    }
+
     function renderAvailabilityButtons(allHours, availableHours, selectedHour) {
         availabilitySlots.innerHTML = '';
 
@@ -280,12 +390,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         allHours.forEach(function (hour) {
             const isAvailable = availableHours.includes(hour);
+            const isPastHour = !isAvailable && isPastHourForSelectedDate(hour);
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'btn btn-sm ' + (
                 selectedHour === hour
                     ? 'btn-primary'
-                    : (isAvailable ? 'btn-outline-primary' : 'btn-outline-secondary')
+                    : (isAvailable
+                        ? 'btn-outline-primary'
+                        : (isPastHour ? 'btn-outline-dark' : 'btn-outline-secondary'))
             );
             button.textContent = hour;
             button.dataset.hour = hour;
@@ -298,8 +411,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             } else {
                 button.disabled = true;
-                button.title = 'Horario reservado';
-                button.setAttribute('aria-label', hour + ' reservado');
+                button.title = isPastHour ? 'Horario ya pasado' : 'Horario reservado';
+                button.setAttribute('aria-label', hour + (isPastHour ? ' ya paso' : ' reservado'));
             }
 
             availabilitySlots.appendChild(button);
@@ -377,7 +490,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 horaSelect.innerHTML = '<option value="">No hay horarios disponibles</option>';
                 preferredHour = '';
                 setAvailabilitySummary(
-                    'No encontramos horarios libres para esta cancha en la fecha elegida. Los bloqueados indican que ya están reservados.',
+                    fechaInput.value === today
+                        ? 'No encontramos horarios libres para esta cancha hoy. Los bloqueados pueden estar reservados o ya haber pasado.'
+                        : 'No encontramos horarios libres para esta cancha en la fecha elegida. Los bloqueados indican que ya están reservados.',
                     '0 disponibles'
                 );
                 renderAvailabilityButtons(allHours, [], '');
@@ -401,7 +516,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             horaSelect.value = selectedHour;
             setAvailabilitySummary(
-                'Puedes elegir los horarios libres. Los bloqueados indican que ya están reservados.',
+                fechaInput.value === today
+                    ? 'Puedes elegir los horarios libres. Los bloqueados pueden estar reservados o ya haber pasado.'
+                    : 'Puedes elegir los horarios libres. Los bloqueados indican que ya están reservados.',
                 hours.length === 1 ? '1 disponible' : hours.length + ' disponibles'
             );
             renderAvailabilityButtons(allHours, hours, selectedHour);
@@ -422,6 +539,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     fechaInput.addEventListener('change', loadHours);
     descuentoInput.addEventListener('input', updateTotal);
+    estadoSelect.addEventListener('change', syncPaymentFields);
     horaSelect.addEventListener('change', function () {
         preferredHour = horaSelect.value;
 
@@ -435,6 +553,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     updateCanchaMeta(false);
+    syncPaymentFields();
     if (canchaSelect.value && fechaInput.value) {
         loadHours();
     }

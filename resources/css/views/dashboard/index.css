@@ -6,8 +6,124 @@
     gap: 0.75rem;
 }
 
+.page-dashboard .dashboard-pie-layout {
+    display: grid;
+    grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: center;
+}
+
+.page-dashboard .dashboard-pie-card {
+    display: flex;
+    justify-content: center;
+}
+
+.page-dashboard .dashboard-pie-chart {
+    position: relative;
+    width: min(100%, 280px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    box-shadow: 0 14px 32px rgba(33, 37, 41, 0.1);
+}
+
+.page-dashboard .dashboard-pie-center {
+    position: absolute;
+    inset: 22%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    text-align: center;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px rgba(25, 135, 84, 0.08);
+}
+
+.page-dashboard .dashboard-pie-center span {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.page-dashboard .dashboard-pie-center strong {
+    font-size: clamp(1rem, 2vw, 1.35rem);
+}
+
+.page-dashboard .dashboard-pie-legend {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.page-dashboard .dashboard-pie-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid #edf2ef;
+    border-radius: 1rem;
+    background: #fafcfb;
+}
+
+.page-dashboard .dashboard-pie-legend-color {
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+    border-radius: 50%;
+}
+
+.page-dashboard .dashboard-pie-legend-text {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 1rem;
+    font-size: 0.95rem;
+}
+
+.page-dashboard .dashboard-pie-legend-text span {
+    color: #6c757d;
+}
+
+.page-dashboard .dashboard-bar-row {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.page-dashboard .dashboard-bar-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.95rem;
+}
+
+.page-dashboard .dashboard-bar-track {
+    width: 100%;
+    height: 14px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #edf2ef;
+}
+
+.page-dashboard .dashboard-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #212529 0%, #198754 100%);
+}
+
 @media (max-width: 575.98px) {
     .page-dashboard .dashboard-hero {
         text-align: left;
+    }
+
+    .page-dashboard .dashboard-pie-layout {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .page-dashboard .dashboard-bar-header {
+        font-size: 0.88rem;
+    }
+
+    .page-dashboard .dashboard-pie-legend-text {
+        font-size: 0.88rem;
     }
 }

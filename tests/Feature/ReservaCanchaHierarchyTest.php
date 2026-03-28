@@ -180,6 +180,89 @@ class ReservaCanchaHierarchyTest extends TestCase
         ]);
     }
 
+    public function test_paid_reservation_requires_payment_method_and_marks_full_payment(): void
+    {
+        [$user, $cliente, $principal] = $this->baseReservationSetup();
+
+        $this->actingAs($user)
+            ->from(route('reservas.create'))
+            ->post(route('reservas.store'), [
+                'cliente_id' => $cliente->id,
+                'cancha_id' => $principal->id,
+                'fecha' => '2030-01-19',
+                'hora' => '10:00',
+                'estado' => 'pagada',
+            ])
+            ->assertRedirect(route('reservas.create'))
+            ->assertSessionHasErrors('metodo_pago_principal');
+
+        $this->actingAs($user)
+            ->post(route('reservas.store'), [
+                'cliente_id' => $cliente->id,
+                'cancha_id' => $principal->id,
+                'fecha' => '2030-01-19',
+                'hora' => '10:00',
+                'estado' => 'pagada',
+                'metodo_pago_principal' => 'transferencia',
+            ])
+            ->assertRedirect(route('reservas.index'));
+
+        $this->assertDatabaseHas('reservas', [
+            'cliente_id' => $cliente->id,
+            'cancha_id' => $principal->id,
+            'fecha' => '2030-01-19',
+            'hora' => '10:00:00',
+            'estado' => 'pagada',
+            'estado_pago' => 'pagado',
+            'metodo_pago_principal' => 'transferencia',
+            'anticipo' => 210000,
+            'saldo_pendiente' => 0,
+        ]);
+    }
+
+    public function test_partial_payment_creates_abonado_reservation_with_remaining_balance(): void
+    {
+        [$user, $cliente, $principal] = $this->baseReservationSetup();
+
+        $this->actingAs($user)
+            ->from(route('reservas.create'))
+            ->post(route('reservas.store'), [
+                'cliente_id' => $cliente->id,
+                'cancha_id' => $principal->id,
+                'fecha' => '2030-01-21',
+                'hora' => '10:00',
+                'estado' => 'abonado',
+                'anticipo' => 210000,
+                'metodo_pago_principal' => 'efectivo',
+            ])
+            ->assertRedirect(route('reservas.create'))
+            ->assertSessionHasErrors('anticipo');
+
+        $this->actingAs($user)
+            ->post(route('reservas.store'), [
+                'cliente_id' => $cliente->id,
+                'cancha_id' => $principal->id,
+                'fecha' => '2030-01-21',
+                'hora' => '10:00',
+                'estado' => 'abonado',
+                'anticipo' => 50000,
+                'metodo_pago_principal' => 'efectivo',
+            ])
+            ->assertRedirect(route('reservas.index'));
+
+        $this->assertDatabaseHas('reservas', [
+            'cliente_id' => $cliente->id,
+            'cancha_id' => $principal->id,
+            'fecha' => '2030-01-21',
+            'hora' => '10:00:00',
+            'estado' => 'confirmada',
+            'estado_pago' => 'parcial',
+            'metodo_pago_principal' => 'efectivo',
+            'anticipo' => 50000,
+            'saldo_pendiente' => 160000,
+        ]);
+    }
+
     /**
      * @return array{0: User, 1: Cliente, 2: Cancha, 3: Cancha}
      */

@@ -66,7 +66,11 @@ class CanchaAvailabilityService
             return [];
         }
 
-        $slots = $this->timeSlotsFor($cancha);
+        $slots = $this->filterPastTimeSlots(
+            $this->timeSlotsFor($cancha),
+            $fecha,
+            $ignoreReservationId
+        );
         $reserved = $this->reservedTimes($cancha, $fecha, $ignoreReservationId);
 
         return array_values(array_diff($slots, $reserved));
@@ -116,6 +120,11 @@ class CanchaAvailabilityService
         sort($slots);
 
         return $slots;
+    }
+
+    public function reservationDateTimeHasPassed(string $fecha, string $hora): bool
+    {
+        return Carbon::parse("{$fecha} {$hora}")->lt(now());
     }
 
     public function conflictMessage(Cancha $selectedCancha, Reserva $conflict): string
@@ -171,6 +180,59 @@ class CanchaAvailabilityService
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * @param  array<int, string>  $slots
+     * @return array<int, string>
+     */
+    private function filterPastTimeSlots(array $slots, string $fecha, ?int $ignoreReservationId = null): array
+    {
+        $today = now()->toDateString();
+
+        if ($fecha > $today) {
+            return $slots;
+        }
+
+        if ($fecha < $today) {
+            return $this->preserveIgnoredReservationSlot([], $fecha, $slots, $ignoreReservationId);
+        }
+
+        $currentTime = now()->format('H:i');
+        $availableSlots = array_values(array_filter($slots, fn (string $slot) => $slot >= $currentTime));
+
+        return $this->preserveIgnoredReservationSlot($availableSlots, $fecha, $slots, $ignoreReservationId);
+    }
+
+    /**
+     * @param  array<int, string>  $slots
+     * @param  array<int, string>  $allConfiguredSlots
+     * @return array<int, string>
+     */
+    private function preserveIgnoredReservationSlot(
+        array $slots,
+        string $fecha,
+        array $allConfiguredSlots,
+        ?int $ignoreReservationId = null
+    ): array {
+        if (!$ignoreReservationId) {
+            return $slots;
+        }
+
+        $ignoredReservation = Reserva::find($ignoreReservationId);
+        if (!$ignoredReservation || $ignoredReservation->fecha?->toDateString() !== $fecha) {
+            return $slots;
+        }
+
+        $ignoredHour = substr((string) $ignoredReservation->hora, 0, 5);
+        if (!in_array($ignoredHour, $allConfiguredSlots, true) || in_array($ignoredHour, $slots, true)) {
+            return $slots;
+        }
+
+        $slots[] = $ignoredHour;
+        sort($slots);
+
+        return array_values(array_unique($slots));
     }
 
     /**

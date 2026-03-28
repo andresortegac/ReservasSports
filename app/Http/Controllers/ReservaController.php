@@ -107,8 +107,8 @@ class ReservaController extends Controller
     private function validatedReservationData(Request $request, ?Reserva $reserva = null): array
     {
         $allowedStates = $reserva?->exists
-            ? ['pendiente', 'confirmada', 'pagada', 'cancelada']
-            : ['confirmada', 'pagada'];
+            ? ['pendiente', 'confirmada', 'abonado', 'pagada', 'cancelada']
+            : ['confirmada', 'abonado', 'pagada'];
 
         $data = $request->validate([
             'cliente_id' => ['required', 'exists:clientes,id'],
@@ -116,6 +116,8 @@ class ReservaController extends Controller
             'fecha' => ['required', 'date'],
             'hora' => ['required', 'date_format:H:i'],
             'descuento' => ['nullable', 'numeric', 'min:0'],
+            'anticipo' => ['nullable', 'numeric', 'min:0'],
+            'metodo_pago_principal' => ['nullable', 'in:efectivo,transferencia,otro'],
             'estado' => ['required', 'in:' . implode(',', $allowedStates)],
             'notas' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -135,6 +137,16 @@ class ReservaController extends Controller
 
         $fecha = Carbon::parse((string) $data['fecha'])->toDateString();
         $hora = Carbon::createFromFormat('H:i', (string) $data['hora'])->format('H:i:s');
+
+        if (
+            $this->availability->reservationDateTimeHasPassed($fecha, $hora)
+            && !$this->sameReservationDateTime($reserva, $fecha, $hora)
+        ) {
+            return $this->throwReservationValidation(
+                'hora',
+                'No puedes reservar fechas anteriores a hoy ni horas que ya hayan pasado.'
+            );
+        }
 
         if (!in_array(substr($hora, 0, 5), $this->availability->timeSlotsFor($cancha), true)) {
             return $this->throwReservationValidation(
@@ -180,7 +192,46 @@ class ReservaController extends Controller
             $precioFinal = 0;
         }
 
-        $estado = $data['estado'];
+        $estadoSeleccionado = $data['estado'];
+        $anticipoIngresado = (float) ($data['anticipo'] ?? 0);
+        $metodoPago = $data['metodo_pago_principal'] ?? null;
+
+        if ($estadoSeleccionado === 'pagada' && $precioFinal > 0 && !$metodoPago) {
+            return $this->throwReservationValidation(
+                'metodo_pago_principal',
+                'Debes seleccionar la forma de pago para marcar la reserva como pagada.'
+            );
+        }
+
+        if ($estadoSeleccionado === 'abonado') {
+            if ($precioFinal <= 0) {
+                return $this->throwReservationValidation(
+                    'estado',
+                    'Una reserva con total 0 no puede quedar como abonada.'
+                );
+            }
+
+            if ($anticipoIngresado <= 0 || $anticipoIngresado >= $precioFinal) {
+                return $this->throwReservationValidation(
+                    'anticipo',
+                    'El abono debe ser mayor a 0 y menor que el total final.'
+                );
+            }
+
+            if (!$metodoPago) {
+                return $this->throwReservationValidation(
+                    'metodo_pago_principal',
+                    'Debes seleccionar la forma de pago del abono.'
+                );
+            }
+        }
+
+        if (!in_array($estadoSeleccionado, ['pagada', 'abonado'], true)) {
+            $anticipoIngresado = 0;
+            $metodoPago = null;
+        }
+
+        $estado = $estadoSeleccionado === 'abonado' ? 'confirmada' : $estadoSeleccionado;
 
         $data['fecha'] = $fecha;
         $data['hora'] = $hora;
@@ -190,10 +241,15 @@ class ReservaController extends Controller
         $data['subcancha'] = 1;
         $data['user_id'] = auth()->id();
         $data['duracion_minutos'] = 60;
-        $data['anticipo'] = 0;
-        $data['saldo_pendiente'] = $estado === 'pagada' || $precioFinal === 0 ? 0 : $precioFinal;
-        $data['estado_pago'] = $estado === 'pagada' || $precioFinal === 0 ? 'pagado' : 'pendiente';
-        $data['metodo_pago_principal'] = null;
+        $data['estado'] = $estado;
+        $data['anticipo'] = $estadoSeleccionado === 'pagada'
+            ? $precioFinal
+            : ($estadoSeleccionado === 'abonado' ? $anticipoIngresado : 0);
+        $data['saldo_pendiente'] = max(0, $precioFinal - (float) $data['anticipo']);
+        $data['estado_pago'] = $precioFinal === 0 || $estadoSeleccionado === 'pagada'
+            ? 'pagado'
+            : ($estadoSeleccionado === 'abonado' ? 'parcial' : 'pendiente');
+        $data['metodo_pago_principal'] = $precioFinal === 0 ? null : $metodoPago;
 
         return [$data, $cancha];
     }
@@ -234,5 +290,15 @@ class ReservaController extends Controller
         }
 
         return (float) $cancha->precio_hora;
+    }
+
+    private function sameReservationDateTime(?Reserva $reserva, string $fecha, string $hora): bool
+    {
+        if (!$reserva || !$reserva->exists) {
+            return false;
+        }
+
+        return $reserva->fecha?->toDateString() === $fecha
+            && substr((string) $reserva->hora, 0, 8) === $hora;
     }
 }

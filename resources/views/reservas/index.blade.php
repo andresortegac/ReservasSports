@@ -48,9 +48,23 @@
                             @endif
                         </td>
                         <td>
-                            <span class="badge text-bg-{{ $reserva->estado === 'pagada' ? 'success' : ($reserva->estado === 'cancelada' ? 'secondary' : 'warning') }}">
-                                {{ ucfirst($reserva->estado) }}
+                            @php
+                                $estadoVisual = $reserva->estado_pago === 'parcial' ? 'abonado' : $reserva->estado;
+                                $badgeClass = $estadoVisual === 'pagada'
+                                    ? 'success'
+                                    : ($estadoVisual === 'abonado'
+                                        ? 'info'
+                                        : ($estadoVisual === 'cancelada' ? 'secondary' : 'warning'));
+                            @endphp
+                            <span class="badge text-bg-{{ $badgeClass }}">
+                                {{ ucfirst($estadoVisual) }}
                             </span>
+                            @if ((float) ($reserva->anticipo ?? 0) > 0 && (float) ($reserva->saldo_pendiente ?? 0) > 0)
+                                <div class="text-muted small">
+                                    Abono ${{ number_format((float) $reserva->anticipo, 0, ',', '.') }}
+                                    · Saldo ${{ number_format((float) $reserva->saldo_pendiente, 0, ',', '.') }}
+                                </div>
+                            @endif
                         </td>
                         <td class="text-end">
                             <div class="table-actions">
