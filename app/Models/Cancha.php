@@ -23,6 +23,9 @@ class Cancha extends Model
         'parent_id',
         'orden',
         'nombre',
+        'subdominio',
+        'integration_identifier',
+        'integration_token',
         'tipo',
         'subcanchas_count',
         'precio_hora',
@@ -51,6 +54,11 @@ class Cancha extends Model
     public function reservas(): HasMany
     {
         return $this->hasMany(Reserva::class);
+    }
+
+    public function reservasExternas(): HasMany
+    {
+        return $this->hasMany(ReservaExterna::class);
     }
 
     public function scopeRoot(Builder $query): Builder

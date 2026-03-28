@@ -32,6 +32,39 @@
     </div>
 
     <div class="col-md-3">
+        <label for="subdominio" class="form-label">Subdominio</label>
+        <input
+            type="text"
+            id="subdominio"
+            name="subdominio"
+            class="form-control"
+            value="{{ old('subdominio', $cancha->subdominio) }}"
+        >
+    </div>
+
+    <div class="col-md-3">
+        <label for="integration_identifier" class="form-label">Identificador integracion</label>
+        <input
+            type="text"
+            id="integration_identifier"
+            name="integration_identifier"
+            class="form-control"
+            value="{{ old('integration_identifier', $cancha->integration_identifier) }}"
+        >
+    </div>
+
+    <div class="col-md-3">
+        <label for="integration_token" class="form-label">Token integracion</label>
+        <input
+            type="text"
+            id="integration_token"
+            name="integration_token"
+            class="form-control"
+            value="{{ old('integration_token', $cancha->integration_token) }}"
+        >
+    </div>
+
+    <div class="col-md-3">
         <label for="tipo" class="form-label">Tipo de cancha</label>
         <select id="tipo" name="tipo" class="form-select" required>
             <option value="independiente" {{ $tipoCancha === 'independiente' ? 'selected' : '' }}>

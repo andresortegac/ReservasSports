@@ -41,6 +41,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{reservas_externa}', [ReservaExternaController::class, 'show'])->name('show');
         Route::get('/{reservas_externa}/edit', [ReservaExternaController::class, 'edit'])->name('edit');
         Route::match(['put', 'patch'], '/{reservas_externa}', [ReservaExternaController::class, 'update'])->name('update');
+        Route::post('/{reservas_externa}/confirmar', [ReservaExternaController::class, 'confirm'])->name('confirm');
+        Route::post('/{reservas_externa}/cancelar', [ReservaExternaController::class, 'cancel'])->name('cancel');
         Route::delete('/{reservas_externa}', [ReservaExternaController::class, 'destroy'])->name('destroy');
     });
 

@@ -123,6 +123,9 @@ class CanchaController extends Controller
 
         $validator = Validator::make($request->all(), [
             'nombre' => ['required', 'string', 'max:120'],
+            'subdominio' => ['nullable', 'string', 'max:120', Rule::unique('canchas', 'subdominio')->ignore($cancha?->id)],
+            'integration_identifier' => ['nullable', 'string', 'max:120', Rule::unique('canchas', 'integration_identifier')->ignore($cancha?->id)],
+            'integration_token' => ['nullable', 'string', 'max:255'],
             'tipo' => ['required', Rule::in(['independiente', 'con_divisiones', 'subcancha'])],
             'parent_id' => ['nullable', 'integer', $rootExistsRule],
             'orden' => ['nullable', 'integer', 'min:1', 'max:99'],
@@ -179,6 +182,9 @@ class CanchaController extends Controller
         $data = $validator->validate();
         $data['dias_operacion'] = $normalizedDays;
         $data['bloques_horarios'] = $normalizedBlocks;
+        $data['subdominio'] = $data['subdominio'] ?: null;
+        $data['integration_identifier'] = $data['integration_identifier'] ?: null;
+        $data['integration_token'] = $data['integration_token'] ?: null;
         $data['parent_id'] = $data['tipo'] === 'subcancha' ? (int) $data['parent_id'] : null;
         $data['orden'] = $data['tipo'] === 'subcancha' ? (int) $data['orden'] : 1;
         $data['subcanchas_count'] = 1;
